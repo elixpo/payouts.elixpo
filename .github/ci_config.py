@@ -20,9 +20,9 @@ LLM_MAX_TOKENS_SEARCH = 2500
 LLM_MODEL = LLM_MODEL_CHAT
 
 # ── Repository ──────────────────────────────────────
-REPO = "elixpo/accounts.elixpo"
-PROJECT_NAME = "accounts.elixpo"
-PROJECT_DESCRIPTION = "Elixpo OAuth SSO Provider"
+REPO = "elixpo/payouts.elixpo"
+PROJECT_NAME = "payouts.elixpo"
+PROJECT_DESCRIPTION = "Elixpo payouts service"
 
 # ── GitHub Projects V2 ──────────────────────────────
 # Shared org-wide projects (linked to all elixpo repos).
