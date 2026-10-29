@@ -190,14 +190,47 @@ source is MIT - forks must operate under a different name.
 
 ---
 
-## Running locally
+## Local setup
 
-```bash
-npm install
-npm run dev
-```
+Requirements: Node.js 22 or newer and npm.
 
-Then open [http://localhost:3000](http://localhost:3000).
+1. Install dependencies:
+
+   ```bash
+   npm ci
+   ```
+
+2. Create your local environment file from the template and fill it in:
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   [`.env.example`](.env.example) lists every variable by name, grouped into
+   *Required locally*, *Optional integrations* and *Deploy-only*. It contains
+   no real values. Generate throwaway local secrets with
+   `openssl rand -hex 32`. Never reuse production credentials.
+
+3. Point the app at a development database. `next dev` has no Cloudflare
+   bindings, so it reaches D1 and KV through the Cloudflare REST API using the
+   `CLOUDFLARE_*` variables. Use your own Cloudflare account with a separate
+   database and KV namespace, then apply the migrations to it:
+
+   ```bash
+   npm run db:migrate
+   ```
+
+4. Start the dev server and open [http://localhost:3000](http://localhost:3000):
+
+   ```bash
+   npm run dev
+   ```
+
+Dashboard sign-in needs an Elixpo Accounts OAuth client whose redirect URI is
+`http://localhost:3000/api/auth/callback`. Checkout needs Razorpay **test mode**
+keys from your own Razorpay account. A credential-free local mode with a fake
+payment provider is tracked in
+[#43](https://github.com/elixpo/payouts.elixpo/issues/43).
 
 Useful scripts:
 
