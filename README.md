@@ -214,7 +214,9 @@ Requirements: Node.js 22 or newer and npm.
 3. Point the app at a development database. `next dev` has no Cloudflare
    bindings, so it reaches D1 and KV through the Cloudflare REST API using the
    `CLOUDFLARE_*` variables. Use your own Cloudflare account with a separate
-   database and KV namespace, then apply the migrations to it:
+   database and KV namespace. `wrangler.toml` holds the project's own database
+   id, so use your database id in a local copy that you do not commit, then
+   apply the migrations to it:
 
    ```bash
    npm run db:migrate
