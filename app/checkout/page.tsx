@@ -97,6 +97,17 @@ function hostOf(url?: string | null): string | null {
     }
 }
 
+/** Only ever navigate to http(s) — never a `javascript:`/`data:` return URL. */
+function safeHref(url?: string | null): string {
+    if (!url) return "/";
+    try {
+        const u = new URL(url, window.location.origin);
+        return u.protocol === "https:" || u.protocol === "http:" ? u.toString() : "/";
+    } catch {
+        return "/";
+    }
+}
+
 function loadRazorpayScript(): Promise<boolean> {
     return new Promise((resolve) => {
         if (window.Razorpay) return resolve(true);
@@ -162,8 +173,7 @@ function CheckoutInner() {
                     // success ceremony and bounce immediately so the
                     // buyer doesn't see a misleading "you're all set"
                     // screen for a sub they may have cancelled.
-                    const back = data.return_url || "/";
-                    window.location.href = back;
+                    window.location.href = safeHref(data.return_url);
                     return;
                 }
                 setPhase("ready");
@@ -183,7 +193,7 @@ function CheckoutInner() {
 
     const goBack = () => {
         const back = session?.return_url;
-        if (back) window.location.href = back;
+        if (back) window.location.href = safeHref(back);
         else if (window.history.length > 1) window.history.back();
         else window.location.href = "/";
     };
@@ -192,7 +202,7 @@ function CheckoutInner() {
         setPhase("success");
         // No toast here — the full-card success state already says it clearly.
         const back = returnUrl || session?.return_url;
-        if (back) setTimeout(() => (window.location.href = back), 2600);
+        if (back) setTimeout(() => (window.location.href = safeHref(back)), 2600);
     };
 
     const payTest = async () => {

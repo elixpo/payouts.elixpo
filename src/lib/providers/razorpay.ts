@@ -138,6 +138,9 @@ export class RazorpayProvider implements PaymentProvider {
         rawBody: string,
         signature: string,
     ): Promise<boolean> {
+        // No configured secret → nothing can verify (and an empty HMAC key
+        // throws in WebCrypto). Fail closed instead of 500ing.
+        if (!this.webhookSecret || !signature) return false;
         const expected = await hmacSha256Hex(this.webhookSecret, rawBody);
         return timingSafeEqual(expected, (signature || "").trim());
     }

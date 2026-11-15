@@ -9,6 +9,7 @@ import {
     toView,
 } from "@/lib/entitlements";
 import { getEnv } from "@/lib/env";
+import { notifyBuyer } from "@/lib/mail-notify";
 import { getWebhookEndpoint } from "@/lib/repo";
 import { fireEntitlementUpdated } from "@/lib/webhooks";
 
@@ -95,6 +96,15 @@ async function handle(request: NextRequest) {
             cached = { slug: app?.slug ?? "", endpoint };
             appCache.set(row.app_id, cached);
         }
+
+        await notifyBuyer(db, {
+            appId: row.app_id,
+            event: "access.expired",
+            externalUid: row.external_uid,
+            ref: `${row.id}:${row.version}`,
+            tier: row.tier,
+            periodEnd: row.expires_at,
+        });
 
         if (cached.endpoint) {
             await fireEntitlementUpdated(

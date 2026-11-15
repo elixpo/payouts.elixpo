@@ -71,8 +71,10 @@ export default function EntitlementsDocs() {
                         latest grant.
                     </>,
                     <>
-                        A missing or wrong key returns <Code>401</Code>; an
-                        unknown app returns <Code>404</Code>.
+                        A missing or wrong key returns <Code>401</Code>; a
+                        valid key for a different app returns{" "}
+                        <Code>403</Code>. During a key rotation the previous key
+                        keeps working until its grace window ends.
                     </>,
                 ]}
             />

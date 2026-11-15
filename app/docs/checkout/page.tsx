@@ -18,9 +18,10 @@ Content-Type: application/json
 {
   "tier": "member",                 // product tier to purchase
   "currency": "INR",                // we pick the matching catalog price
+  "interval": "month",              // optional: month | year — when a tier sells both
   "customer": {
     "uid": "u_123",                 // buyer id in your namespace
-    "email": "buyer@example.com"    // optional, prefilled at checkout
+    "email": "buyer@example.com"    // recommended: prefilled + used for buyer emails
   },
   "success_url": "https://blogs.elixpo.com/settings",
   "metadata": { "plan": "member" }  // optional, echoed onto the session
@@ -76,8 +77,10 @@ export default function CheckoutDocs() {
             <DocP>
                 Authenticate with your <Code>ELIXPO_PAY_API_KEY</Code> (secret
                 key). The <Code>amount</Code> is never sent by you — Elixpo Pay
-                looks up the active price for <Code>(tier, currency)</Code> in
-                your catalog, so a user can't tamper with the price.
+                looks up the active price for <Code>(tier, currency, interval)</Code>{" "}
+                in your catalog, so a user can't tamper with the price.{" "}
+                <Code>success_url</Code> must be an absolute <Code>https://</Code>{" "}
+                URL.
             </DocP>
 
             <DocH2>Response</DocH2>

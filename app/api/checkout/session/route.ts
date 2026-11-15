@@ -3,7 +3,7 @@ export const runtime = "edge";
 import type { D1Database } from "@cloudflare/workers-types";
 import { type NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/d1-client";
-import { getEnv } from "@/lib/env";
+import { getEnv, testPaymentsAllowed } from "@/lib/env";
 import { verifyHandoff } from "@/lib/handoff";
 import { isPlatformMerchant, PLATFORM_COMMISSION_BPS } from "@/lib/merchant";
 // ensureProviderCustomer kept available in @/lib/customers for future use
@@ -165,8 +165,7 @@ async function finalizeSession(
         // Test payment mode: outside production, complete without a real provider
         // so the full session -> grant -> entitlement loop can be exercised before
         // Razorpay/Stripe bank accounts are connected.
-        const environment = await getEnv("ENVIRONMENT");
-        if (environment !== "production") {
+        if (await testPaymentsAllowed()) {
             return NextResponse.json({
                 session_id: session.id,
                 provider: "test",

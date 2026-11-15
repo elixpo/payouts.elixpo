@@ -42,6 +42,7 @@ const DOCS_NAV = [
     { label: "Checkout sessions", href: "/docs/checkout" },
     { label: "Webhooks", href: "/docs/webhooks" },
     { label: "Entitlements API", href: "/docs/entitlements" },
+    { label: "Buyer emails", href: "/docs/emails" },
     { label: "Connected payouts", href: "/docs/payouts" },
 ];
 

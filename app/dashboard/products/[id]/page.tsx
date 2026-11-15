@@ -25,6 +25,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import ChangeIdDialog from "@/components/change-id-dialog";
 import ConfirmDialog from "@/components/confirm-dialog";
+import MailNotificationsCard from "@/components/mail-notifications-card";
 import { formatMoney, GlassCard, StatCard } from "@/components/dashboard-ui";
 import RotateDialog, { type GraceKey } from "@/components/rotate-dialog";
 
@@ -1211,6 +1212,9 @@ export default function ProductDetailPage() {
                     </Typography>
                 )}
             </GlassCard>
+
+            {/* Buyer emails via Elixpo Mails */}
+            <MailNotificationsCard productId={id} />
 
             {/* Tiers (read-only — managed from code via the sync API) */}
             <GlassCard>
