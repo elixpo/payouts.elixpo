@@ -97,15 +97,14 @@ export default function PricingPage() {
                     sx={{ mb: { xs: 6, md: 10 } }}
                 >
                     <Stack direction="row" alignItems="center" spacing={1}>
-                        <Box sx={{ width: 6, height: 6, borderRadius: "50%", background: "#CF4500" }} />
+                        <Box sx={{ width: 6, height: 6, borderRadius: "50%", background: "var(--app-accent)" }} />
                         <Typography
                             sx={{
                                 fontSize: "14px",
                                 fontWeight: 700,
-                                letterSpacing: "0.06em",
+                                letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                                 color: "var(--app-fg-muted)",
                                 textTransform: "uppercase",
-                                fontFamily: "var(--font-sofia-sans)",
                             }}
                         >
                             PRICING PLANS
@@ -115,9 +114,8 @@ export default function PricingPage() {
                         variant="h2"
                         sx={{
                             fontWeight: 500,
-                            fontSize: { xs: "32px", md: "48px" },
-                            letterSpacing: "-2%",
-                            lineHeight: 1.1,
+                            fontSize: { xs: "2.7rem", md: "4.6rem" }, lineHeight: 0.96,
+                            letterSpacing: "-0.055em",
                             color: "var(--app-fg)",
                             fontFamily: "var(--font-sofia-sans)",
                         }}
@@ -159,14 +157,14 @@ export default function PricingPage() {
                                 display: "flex",
                                 flexDirection: "column",
                                 p: { xs: 3.5, md: 4 },
-                                borderRadius: "24px",
+                                borderRadius: "var(--radius-card)",
                                 background: "var(--app-bg-2)", // Lifted Cream
                                 border: t.popular
                                     ? "2px solid var(--app-fg)" // Bolder border for popular
                                     : "1.5px solid var(--app-overlay)",
                                 boxShadow: t.popular
-                                    ? "rgba(0, 0, 0, 0.08) 0px 24px 48px 0px"
-                                    : "rgba(0, 0, 0, 0.04) 0px 4px 24px 0px",
+                                    ? "color-mix(in srgb, var(--app-fg) 8%, transparent) 0px 24px 48px 0px"
+                                    : "color-mix(in srgb, var(--app-fg) 4%, transparent) 0px 4px 24px 0px",
                             }}
                         >
                             {t.popular && (
@@ -180,11 +178,10 @@ export default function PricingPage() {
                                         borderRadius: "999px",
                                         fontSize: "11px",
                                         fontWeight: 700,
-                                        letterSpacing: "0.06em",
+                                        letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                                         textTransform: "uppercase",
                                         color: "var(--app-on-ink)",
                                         background: "var(--app-ink)", // Ink Black pill badge
-                                        fontFamily: "var(--font-sofia-sans)",
                                     }}
                                 >
                                     Popular
@@ -227,7 +224,7 @@ export default function PricingPage() {
                                         fontSize: "36px",
                                         color: "var(--app-fg)",
                                         fontFamily: "var(--font-sofia-sans)",
-                                        letterSpacing: "-1px",
+                                        letterSpacing: "-0.045em",
                                     }}
                                 >
                                     {t.price}
@@ -245,7 +242,7 @@ export default function PricingPage() {
 
                             <Typography
                                 sx={{
-                                    color: "#CF4500", // Signal Orange for key pricing metrics
+                                    color: "var(--app-accent)", // Signal Orange for key pricing metrics
                                     fontSize: "15px",
                                     fontWeight: 600,
                                     mb: 4,
@@ -267,7 +264,7 @@ export default function PricingPage() {
                                         <CheckIcon
                                             sx={{
                                                 fontSize: 18,
-                                                color: "#CF4500", // Signal Orange check icons
+                                                color: "var(--app-accent)", // Signal Orange check icons
                                                 mt: "2px",
                                             }}
                                         />
@@ -298,7 +295,7 @@ export default function PricingPage() {
                                         background: "var(--app-ink)",
                                         color: "var(--app-on-ink)",
                                         border: "1.5px solid var(--app-ink)",
-                                        borderRadius: "20px",
+                                        borderRadius: "999px",
                                         py: 1.4,
                                         fontSize: "15px",
                                         fontWeight: 500,
@@ -323,7 +320,7 @@ export default function PricingPage() {
                                         background: "var(--app-surface)",
                                         color: "var(--app-fg)",
                                         border: "1.5px solid var(--app-fg)",
-                                        borderRadius: "20px",
+                                        borderRadius: "999px",
                                         py: 1.4,
                                         fontSize: "15px",
                                         fontWeight: 500,
@@ -346,10 +343,10 @@ export default function PricingPage() {
                 <Box
                     sx={{
                         p: { xs: 4, md: 5 },
-                        borderRadius: "24px",
+                        borderRadius: "var(--radius-card)",
                         background: "var(--app-bg-2)", // Lifted Cream
                         border: "1.5px solid var(--app-overlay)",
-                        boxShadow: "rgba(0, 0, 0, 0.04) 0px 4px 24px 0px",
+                        boxShadow: "rgba(20, 32, 24, 0.04) 0px 4px 24px 0px",
                         mb: 6,
                     }}
                 >
@@ -360,7 +357,7 @@ export default function PricingPage() {
                             fontSize: "22px",
                             mb: 3,
                             color: "var(--app-fg)",
-                            letterSpacing: "-1%",
+                            letterSpacing: "-0.035em",
                             fontFamily: "var(--font-sofia-sans)",
                         }}
                     >
@@ -434,7 +431,7 @@ export default function PricingPage() {
                     <Box
                         component="a"
                         href="mailto:hello@elixpo.com"
-                        sx={{ color: "#3860BE", textDecoration: "none", fontWeight: 500, "&:hover": { textDecoration: "underline" } }}
+                        sx={{ color: "var(--app-accent)", textDecoration: "none", fontWeight: 500, "&:hover": { textDecoration: "underline" } }}
                     >
                         Talk to our payments team →
                     </Box>

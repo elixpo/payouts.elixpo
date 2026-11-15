@@ -131,7 +131,7 @@ export default function DashboardLayout({
                     bgcolor: "var(--app-bg)",
                 }}
             >
-                <CircularProgress sx={{ color: "#9b7bf7" }} />
+                <CircularProgress sx={{ color: "var(--app-accent)" }} />
             </Box>
         );
     }
@@ -185,9 +185,17 @@ export default function DashboardLayout({
                         position="sticky"
                         elevation={0}
                         sx={{
-                            bgcolor: "color-mix(in srgb, var(--app-bg) 88%, transparent)",
-                            backdropFilter: "blur(16px)",
-                            borderBottom: "1px solid var(--app-border)",
+                            // Floating pill bar — same shape as the site header.
+                            top: { xs: 8, md: 14 },
+                            width: "min(calc(100% - 2rem), 1320px)",
+                            mx: "auto",
+                            mt: { xs: 1, md: 1.75 },
+                            borderRadius: "999px",
+                            color: "var(--app-fg)",
+                            bgcolor: "color-mix(in srgb, var(--app-bg) 90%, transparent)",
+                            backdropFilter: "blur(18px)",
+                            border: "1px solid color-mix(in srgb, var(--app-fg) 14%, transparent)",
+                            boxShadow: "var(--app-shadow)",
                         }}
                     >
                         <Toolbar
@@ -218,7 +226,7 @@ export default function DashboardLayout({
                                     sx={{
                                         height: 30,
                                         width: 30,
-                                        borderRadius: "8px",
+                                        borderRadius: "50%",
                                         display: "block",
                                     }}
                                 />
@@ -227,10 +235,10 @@ export default function DashboardLayout({
                                         fontWeight: 700,
                                         color: "var(--app-fg)",
                                         display: { xs: "none", sm: "block" },
-                                        letterSpacing: "-0.01em",
+                                        letterSpacing: "-0.02em",
                                     }}
                                 >
-                                    Elixpo Pay
+                                    Elixpo <Box component="span" sx={{ color: "var(--app-fg-muted)", fontWeight: 400, fontSize: "0.75rem" }}>Pay</Box>
                                 </Typography>
                             </Box>
 
@@ -260,17 +268,20 @@ export default function DashboardLayout({
                                                 fontSize: "0.85rem",
                                                 whiteSpace: "nowrap",
                                                 px: 1.6,
-                                                borderRadius: "8px",
+                                                borderRadius: "999px",
                                                 color: active
-                                                    ? "var(--app-fg)"
+                                                    ? "var(--app-on-ink)"
                                                     : "var(--app-fg-muted)",
                                                 bgcolor: active
-                                                    ? "var(--app-overlay)"
+                                                    ? "var(--app-ink)"
                                                     : "transparent",
                                                 "&:hover": {
-                                                    bgcolor:
-                                                        "var(--app-overlay)",
-                                                    color: "var(--app-fg)",
+                                                    bgcolor: active
+                                                        ? "var(--app-ink)"
+                                                        : "var(--app-overlay)",
+                                                    color: active
+                                                        ? "var(--app-on-ink)"
+                                                        : "var(--app-fg)",
                                                 },
                                             }}
                                         >
@@ -377,7 +388,7 @@ export default function DashboardLayout({
                                             border: "1px solid var(--app-border)",
                                             borderRadius: "14px",
                                             boxShadow:
-                                                "0 16px 48px rgba(0,0,0,0.55)",
+                                                "0 16px 48px rgba(20, 32, 24, 0.18)",
                                             overflow: "hidden",
                                         },
                                     },
@@ -452,7 +463,7 @@ export default function DashboardLayout({
                                                     fontSize: "0.68rem",
                                                     color: "var(--app-fg-muted)",
                                                     textTransform: "uppercase",
-                                                    letterSpacing: "0.06em",
+                                                    letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                                                 }}
                                             >
                                                 Merchant
@@ -477,10 +488,10 @@ export default function DashboardLayout({
                                                 borderRadius: "999px",
                                                 fontSize: "0.66rem",
                                                 fontWeight: 700,
-                                                color: "#c4b5fd",
+                                                color: "var(--app-accent)",
                                                 background:
-                                                    "rgba(155,123,247,0.12)",
-                                                border: "1px solid rgba(155,123,247,0.3)",
+                                                    "color-mix(in srgb, var(--app-accent) 12%, transparent)",
+                                                border: "1px solid color-mix(in srgb, var(--app-accent) 30%, transparent)",
                                                 flexShrink: 0,
                                                 ml: 1,
                                             }}
@@ -547,8 +558,8 @@ export default function DashboardLayout({
                                         py: 1.25,
                                         color: "var(--app-fg-muted)",
                                         "&:hover": {
-                                            bgcolor: "rgba(239,68,68,0.08)",
-                                            color: "#ef4444",
+                                            bgcolor: "color-mix(in srgb, var(--app-danger) 8%, transparent)",
+                                            color: "var(--app-danger)",
                                         },
                                     }}
                                 >
@@ -598,7 +609,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
                 pb: 0.4,
                 fontSize: "0.66rem",
                 fontWeight: 700,
-                letterSpacing: "0.08em",
+                letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                 textTransform: "uppercase",
                 color: "var(--app-fg-muted)",
             }}

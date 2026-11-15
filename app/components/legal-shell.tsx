@@ -34,8 +34,8 @@ export default function LegalShell({
                         component="h1"
                         sx={{
                             fontWeight: 500,
-                            fontSize: { xs: "2rem", md: "2.6rem" },
-                            letterSpacing: "-2%",
+                            fontSize: { xs: "2.4rem", md: "3.6rem" }, lineHeight: 0.98,
+                            letterSpacing: "-0.055em",
                             color: "var(--app-fg)",
                             fontFamily: "var(--font-sofia-sans)",
                         }}
@@ -62,7 +62,7 @@ export default function LegalShell({
                                 mt: 5,
                                 mb: 2,
                                 color: "var(--app-fg)",
-                                letterSpacing: "-1%",
+                                letterSpacing: "-0.035em",
                             },
                             "& p": {
                                 color: "var(--app-fg)", // Charcoal
@@ -79,7 +79,7 @@ export default function LegalShell({
                             },
                             "& li": { mb: 0.8 },
                             "& a": {
-                                color: "#3860BE", // Link Blue
+                                color: "var(--app-accent)", // Link Blue
                                 textDecoration: "none",
                                 "&:hover": { textDecoration: "underline" },
                             },
@@ -87,7 +87,7 @@ export default function LegalShell({
                                 fontFamily: "var(--font-geist-mono)",
                                 fontSize: "0.85rem",
                                 background: "var(--app-overlay)",
-                                color: "#CF4500", // Signal Orange
+                                color: "var(--app-accent)", // Signal Orange
                                 px: 0.8,
                                 py: 0.2,
                                 borderRadius: "4px",

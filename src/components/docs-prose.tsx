@@ -10,7 +10,7 @@ export function DocTitle({ children }: { children: React.ReactNode }) {
             sx={{
                 fontWeight: 500,
                 fontSize: "2.4rem",
-                letterSpacing: "-2%",
+                letterSpacing: "-0.055em",
                 mb: 2,
                 color: "var(--app-fg)", // Ink Black
                 fontFamily: "var(--font-sofia-sans)",
@@ -48,7 +48,7 @@ export function DocH2({ children }: { children: React.ReactNode }) {
                 mt: 5,
                 mb: 2,
                 color: "var(--app-fg)", // Ink Black
-                letterSpacing: "-1%",
+                letterSpacing: "-0.035em",
                 fontFamily: "var(--font-sofia-sans)",
             }}
         >
@@ -101,7 +101,7 @@ export function Code({ children }: { children: React.ReactNode }) {
                 fontFamily: "var(--font-geist-mono)",
                 fontSize: "0.85rem",
                 background: "var(--app-overlay)",
-                color: "#CF4500", // Signal Orange
+                color: "var(--app-accent)", // Signal Orange
                 px: 0.6,
                 py: 0.2,
                 borderRadius: "4px",

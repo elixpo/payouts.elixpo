@@ -39,11 +39,11 @@ interface MailSettings {
 const MAILS_URL = "https://mails.elixpo.com";
 
 const STATUS_COLOR: Record<string, string> = {
-    sent: "#4ade80",
-    queued: "#fbbf24",
+    sent: "var(--app-success)",
+    queued: "var(--app-warn)",
     suppressed: "var(--app-fg-muted)",
     skipped: "var(--app-fg-muted)",
-    failed: "#f87171",
+    failed: "var(--app-danger)",
 };
 
 /**
@@ -127,7 +127,7 @@ export default function MailNotificationsCard({ productId }: { productId: string
     if (!data) {
         return (
             <GlassCard sx={{ mb: 2, display: "grid", placeItems: "center", py: 4 }}>
-                <CircularProgress size={22} sx={{ color: "#9b7bf7" }} />
+                <CircularProgress size={22} sx={{ color: "var(--app-accent)" }} />
             </GlassCard>
         );
     }
@@ -140,17 +140,17 @@ export default function MailNotificationsCard({ productId }: { productId: string
     return (
         <GlassCard sx={{ mb: 2 }}>
             <Stack direction="row" spacing={1.2} alignItems="center" sx={{ mb: 0.5 }}>
-                <MailOutlineIcon sx={{ color: "#c4b5fd" }} />
+                <MailOutlineIcon sx={{ color: "var(--app-accent)" }} />
                 <Typography sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
                     Buyer emails · Elixpo Mails
                 </Typography>
                 {configured && (
-                    <Chip size="small" label="Connected" sx={{ color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", background: "transparent" }} />
+                    <Chip size="small" label="Connected" sx={{ color: "var(--app-success)", border: "1px solid color-mix(in srgb, var(--app-success) 30%, transparent)", background: "transparent" }} />
                 )}
             </Stack>
             <Typography sx={{ color: "var(--app-fg-muted)", fontSize: "0.82rem", mb: 2 }}>
                 Send receipts and subscription emails from your own mailbox, designed in{" "}
-                <a href={MAILS_URL} target="_blank" rel="noopener noreferrer" style={{ color: "#c4b5fd" }}>
+                <a href={MAILS_URL} target="_blank" rel="noopener noreferrer" style={{ color: "var(--app-accent)" }}>
                     Elixpo Mails
                 </a>
                 . In Mails, create a template per event and add a webhook; paste each webhook's
@@ -218,18 +218,18 @@ export default function MailNotificationsCard({ productId }: { productId: string
                     sx={{
                         textTransform: "none",
                         fontWeight: 600,
-                        color: "#fff",
+                        color: "var(--app-on-ink)",
                         px: 2.4,
-                        background: "#7c5cff",
-                        borderRadius: "10px",
-                        "&:hover": { background: "#8a6dff" },
-                        "&.Mui-disabled": { opacity: 0.5, color: "#fff" },
+                        background: "var(--app-ink)",
+                        borderRadius: "999px",
+                        "&:hover": { background: "var(--app-ink)", opacity: 0.86 },
+                        "&.Mui-disabled": { opacity: 0.5, color: "var(--app-on-ink)" },
                     }}
                 >
                     {busy ? "Saving…" : "Save"}
                 </Button>
                 {msg && (
-                    <Typography role="status" sx={{ fontSize: "0.82rem", color: msg.ok ? "#4ade80" : "#f87171" }}>
+                    <Typography role="status" sx={{ fontSize: "0.82rem", color: msg.ok ? "var(--app-success)" : "var(--app-danger)" }}>
                         {msg.text}
                     </Typography>
                 )}
@@ -288,7 +288,7 @@ const label = {
     fontSize: "0.7rem",
     color: "var(--app-fg-faint)",
     textTransform: "uppercase",
-    letterSpacing: "0.06em",
+    letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
     mb: 0.5,
 };
 
@@ -297,18 +297,18 @@ const field = {
         color: "var(--app-fg)",
         background: "var(--app-overlay)",
         "& fieldset": { borderColor: "var(--app-border)" },
-        "&:hover fieldset": { borderColor: "rgba(155,123,247,0.4)" },
-        "&.Mui-focused fieldset": { borderColor: "#9b7bf7" },
+        "&:hover fieldset": { borderColor: "color-mix(in srgb, var(--app-accent) 40%, transparent)" },
+        "&.Mui-focused fieldset": { borderColor: "var(--app-accent)" },
     },
 };
 
 const outlineBtn = {
     textTransform: "none",
     fontWeight: 600,
-    color: "#c4b5fd",
-    border: "1px solid rgba(155,123,247,0.3)",
+    color: "var(--app-accent)",
+    border: "1px solid color-mix(in srgb, var(--app-accent) 30%, transparent)",
     borderRadius: "10px",
     px: 2,
-    "&:hover": { borderColor: "rgba(155,123,247,0.6)", background: "rgba(155,123,247,0.06)" },
+    "&:hover": { borderColor: "color-mix(in srgb, var(--app-accent) 60%, transparent)", background: "color-mix(in srgb, var(--app-accent) 6%, transparent)" },
     "&.Mui-disabled": { opacity: 0.45 },
 };

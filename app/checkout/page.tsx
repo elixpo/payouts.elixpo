@@ -279,7 +279,7 @@ function CheckoutInner() {
             image: `${window.location.origin}/mark.png`,
             prefill: { email: session.prefill?.email || "" },
             notes: { product: session.product_name, plan: session.tier },
-            theme: { color: "#9b7bf7" },
+            theme: { color: "var(--app-accent)" },
             handler: async (resp: any) => {
                 try {
                     const v = await fetch("/api/checkout/verify", {
@@ -332,7 +332,7 @@ function CheckoutInner() {
         <Shell split={split}>
             {phase === "loading" && (
                 <Centered>
-                    <CircularProgress sx={{ color: "#CF4500" }} />
+                    <CircularProgress sx={{ color: "var(--app-accent)" }} />
                     <Typography sx={{ color: "var(--app-fg-muted)", mt: 2, fontFamily: "var(--font-sofia-sans)" }}>
                         Preparing your secure checkout…
                     </Typography>
@@ -379,8 +379,8 @@ function CheckoutInner() {
                             borderRadius: "50%",
                             display: "grid",
                             placeItems: "center",
-                            background: "rgba(40,200,64,0.06)",
-                            border: "1px solid rgba(40,200,64,0.2)",
+                            background: "color-mix(in srgb, var(--app-success) 6%, transparent)",
+                            border: "1px solid color-mix(in srgb, var(--app-success) 20%, transparent)",
                             mb: 1.5,
                         }}
                     >
@@ -488,7 +488,7 @@ function SummaryPanel({
                 flex: { xs: "1 1 auto", md: "0 0 46%" },
                 p: { xs: 3, md: 3.5 },
                 background:
-                    "linear-gradient(160deg, rgba(206, 69, 0, 0.04) 0%, rgba(243, 115, 56, 0.02) 100%)",
+                    "linear-gradient(160deg, color-mix(in srgb, var(--app-accent) 4%, transparent) 0%, color-mix(in srgb, var(--app-orange) 2%, transparent) 100%)",
                 borderRight: { md: "1.5px solid var(--app-overlay)" },
                 borderBottom: {
                     xs: "1.5px solid var(--app-overlay)",
@@ -518,7 +518,7 @@ function SummaryPanel({
                     />
                     <Typography sx={{ fontWeight: 700, color: "var(--app-fg)", fontFamily: "var(--font-sofia-sans)" }}>
                         Elixpo{" "}
-                        <Box component="span" sx={{ color: "#CF4500", fontWeight: 500 }}>
+                        <Box component="span" sx={{ color: "var(--app-accent)", fontWeight: 500 }}>
                             Pay
                         </Box>
                     </Typography>
@@ -531,9 +531,9 @@ function SummaryPanel({
                             height: 20,
                             fontSize: "0.6rem",
                             fontWeight: 700,
-                            color: "#CF4500",
-                            bgcolor: "rgba(206,69,0,0.06)",
-                            border: "1px solid rgba(206,69,0,0.2)",
+                            color: "var(--app-accent)",
+                            bgcolor: "color-mix(in srgb, var(--app-accent) 6%, transparent)",
+                            border: "1px solid color-mix(in srgb, var(--app-accent) 20%, transparent)",
                             fontFamily: "var(--font-sofia-sans)",
                         }}
                     />
@@ -548,7 +548,7 @@ function SummaryPanel({
                     sx={{ mb: 1.5 }}
                 >
                     <StorefrontIcon
-                        sx={{ fontSize: 14, color: "rgba(20,20,19,0.5)" }}
+                        sx={{ fontSize: 14, color: "color-mix(in srgb, var(--app-fg) 50%, transparent)" }}
                     />
                     <Typography
                         sx={{
@@ -581,9 +581,9 @@ function SummaryPanel({
                     sx={{
                         height: 22,
                         fontSize: "0.7rem",
-                        color: "#CF4500",
-                        bgcolor: "rgba(206,69,0,0.06)",
-                        border: "1px solid rgba(206,69,0,0.2)",
+                        color: "var(--app-accent)",
+                        bgcolor: "color-mix(in srgb, var(--app-accent) 6%, transparent)",
+                        border: "1px solid color-mix(in srgb, var(--app-accent) 20%, transparent)",
                         fontFamily: "var(--font-sofia-sans)",
                     }}
                 />
@@ -645,10 +645,10 @@ function SummaryPanel({
                 sx={{ mt: 2.5 }}
             >
                 <LockIcon
-                    sx={{ fontSize: 13, color: "rgba(20,20,19,0.4)" }}
+                    sx={{ fontSize: 13, color: "color-mix(in srgb, var(--app-fg) 40%, transparent)" }}
                 />
                 <Typography
-                    sx={{ color: "rgba(20,20,19,0.4)", fontSize: "0.74rem", fontFamily: "var(--font-sofia-sans)" }}
+                    sx={{ color: "color-mix(in srgb, var(--app-fg) 40%, transparent)", fontSize: "0.74rem", fontFamily: "var(--font-sofia-sans)" }}
                 >
                     Secured by Razorpay
                 </Typography>
@@ -740,7 +740,7 @@ function ActionPanel({
                     component="a"
                     href="/terms"
                     target="_blank"
-                    sx={{ color: "#CF4500", textDecoration: "none", fontWeight: 500 }}
+                    sx={{ color: "var(--app-accent)", textDecoration: "none", fontWeight: 500 }}
                 >
                     Terms
                 </Box>{" "}
@@ -749,7 +749,7 @@ function ActionPanel({
                     component="a"
                     href="/refunds"
                     target="_blank"
-                    sx={{ color: "#CF4500", textDecoration: "none", fontWeight: 500 }}
+                    sx={{ color: "var(--app-accent)", textDecoration: "none", fontWeight: 500 }}
                 >
                     Refund policy
                 </Box>
@@ -843,11 +843,11 @@ function Shell({ children, split }: { children: ReactNode; split: boolean }) {
                     zIndex: 1,
                     width: "100%",
                     maxWidth: split ? { xs: 440, md: 760 } : 460,
-                    borderRadius: "24px",
+                    borderRadius: "var(--radius-card)",
                     overflow: "hidden",
                     background: "var(--app-bg-2)", // Lifted Cream
                     border: "1.5px solid var(--app-overlay)",
-                    boxShadow: "rgba(0, 0, 0, 0.05) 0px 24px 60px 0px",
+                    boxShadow: "rgba(20, 32, 24, 0.05) 0px 24px 60px 0px",
                     display: "flex",
                     flexDirection: {
                         xs: "column",
@@ -867,7 +867,7 @@ const primaryBtn = {
     fontSize: "15px",
     color: "var(--app-on-ink)", // Light text on ink
     py: 1.4,
-    borderRadius: "20px", // 20px radius
+    borderRadius: "999px", // 20px radius
     background: "var(--app-ink)", // Ink Black (dark in both modes)
     border: "1.5px solid var(--app-ink)",
     "&:hover": {
@@ -883,7 +883,7 @@ const cancelBtn = {
     fontSize: "0.9rem",
     color: "var(--app-fg-muted)",
     py: 0.8,
-    borderRadius: "20px",
+    borderRadius: "999px",
     "&:hover": { color: "var(--app-fg)", background: "var(--app-overlay)" },
     "&.Mui-disabled": { opacity: 0.4 },
 };
@@ -894,7 +894,7 @@ const ghostBtn = {
     color: "var(--app-fg)",
     px: 2.6,
     py: 1,
-    borderRadius: "20px",
+    borderRadius: "999px",
     border: "1.5px solid var(--app-border)",
     background: "var(--app-surface)",
     "&:hover": {
@@ -915,7 +915,7 @@ export default function CheckoutPage() {
                         bgcolor: "var(--app-bg)",
                     }}
                 >
-                    <CircularProgress sx={{ color: "#9b7bf7" }} />
+                    <CircularProgress sx={{ color: "var(--app-accent)" }} />
                 </Box>
             }
         >

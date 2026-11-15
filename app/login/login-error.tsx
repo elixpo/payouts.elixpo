@@ -64,11 +64,11 @@ export default function LoginError({
                     width: "100%",
                     maxWidth: 460,
                     p: { xs: 3.5, md: 4 },
-                    borderRadius: "24px",
+                    borderRadius: "var(--radius-card)",
                     textAlign: "center",
                     background: "var(--app-bg-2)", // Lifted Cream background
                     border: "1.5px solid var(--app-overlay)",
-                    boxShadow: "rgba(0, 0, 0, 0.05) 0px 16px 48px 0px", // Soft premium shadow
+                    boxShadow: "rgba(20, 32, 24, 0.05) 0px 16px 48px 0px", // Soft premium shadow
                 }}
             >
                 {/* Logo Image */}
@@ -89,7 +89,7 @@ export default function LoginError({
                     sx={{
                         fontWeight: 500,
                         fontSize: "1.8rem",
-                        letterSpacing: "-2%",
+                        letterSpacing: "-0.055em",
                         color: "var(--app-fg)", // Ink Black
                         fontFamily: "var(--font-sofia-sans)",
                     }}
@@ -115,9 +115,9 @@ export default function LoginError({
                             px: 2,
                             py: 1.2,
                             borderRadius: "12px",
-                            background: "rgba(211, 47, 47, 0.05)",
-                            border: "1px solid rgba(211, 47, 47, 0.2)",
-                            color: "#C62828",
+                            background: "color-mix(in srgb, var(--app-danger) 5%, transparent)",
+                            border: "1px solid color-mix(in srgb, var(--app-danger) 20%, transparent)",
+                            color: "var(--app-danger)",
                             fontSize: "0.85rem",
                             fontFamily: "var(--font-sofia-sans)",
                         }}
@@ -137,7 +137,7 @@ export default function LoginError({
                         fontSize: "15px",
                         color: "var(--app-on-ink)", // Light text on ink
                         py: 1.4,
-                        borderRadius: "20px", // Button radius 20px
+                        borderRadius: "999px", // Button radius 20px
                         background: "var(--app-ink)", // Ink Black
                         border: "1.5px solid var(--app-ink)",
                         fontFamily: "var(--font-sofia-sans)",
@@ -159,7 +159,7 @@ export default function LoginError({
                     sx={{
                         mt: 4,
                         p: 2.5,
-                        borderRadius: "16px",
+                        borderRadius: "var(--radius-panel)",
                         textAlign: "left",
                         background: "var(--app-overlay)", // Soft Bone tint
                         border: "1px solid var(--app-overlay)",
@@ -171,7 +171,7 @@ export default function LoginError({
                         alignItems="center"
                         sx={{ mb: 1.5 }}
                     >
-                        <ShieldIcon sx={{ fontSize: 18, color: "#CF4500" }} /> {/* Signal Orange icon */}
+                        <ShieldIcon sx={{ fontSize: 18, color: "var(--app-accent)" }} /> {/* Signal Orange icon */}
                         <Typography
                             sx={{ fontWeight: 700, fontSize: "0.92rem", color: "var(--app-fg)", fontFamily: "var(--font-sofia-sans)" }}
                         >
@@ -208,7 +208,7 @@ export default function LoginError({
                                 <CheckCircleIcon
                                     sx={{
                                         fontSize: 16,
-                                        color: "#CF4500", // Signal Orange checks
+                                        color: "var(--app-accent)", // Signal Orange checks
                                         mt: "2px",
                                         flexShrink: 0,
                                     }}
@@ -238,12 +238,12 @@ export default function LoginError({
                             alignItems: "center",
                             gap: 0.5,
                             mt: 2,
-                            color: "#CF4500", // Signal Orange links
+                            color: "var(--app-accent)", // Signal Orange links
                             fontSize: "0.84rem",
                             fontWeight: 600,
                             textDecoration: "none",
                             fontFamily: "var(--font-sofia-sans)",
-                            "&:hover": { color: "#9A3A0A" },
+                            "&:hover": { color: "var(--app-accent-2)" },
                         }}
                     >
                         Learn more about Elixpo Accounts
@@ -297,7 +297,7 @@ const outlinedPillBtn = {
     fontSize: "14px",
     color: "var(--app-fg)", // Ink Black
     py: 1,
-    borderRadius: "20px", // Outlined Pill radius 20px
+    borderRadius: "999px", // Outlined Pill radius 20px
     background: "var(--app-surface)",
     border: "1.5px solid var(--app-border)",
     fontFamily: "var(--font-sofia-sans)",
