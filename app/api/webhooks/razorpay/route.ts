@@ -11,16 +11,19 @@ import {
     getCheckoutSessionBySubscription,
     getSubscriptionByProviderId,
     recordProviderEvent,
+    cancelSupersededSubscriptions,
+    getWebhookEndpoint,
     upsertRecurringSubscription,
 } from "@/lib/repo";
+import { notifyBuyer } from "@/lib/mail-notify";
 
 /**
  * POST /api/webhooks/razorpay
  *
  * Authoritative fulfillment. Verifies X-Razorpay-Signature over the RAW body,
- * de-dups on the provider event id, and fulfills `payment.captured`. Always
- * returns 200 on signature-valid events so Razorpay stops retrying — internal
- * errors are logged, not surfaced as retriable.
+ * de-dups on the provider event id, and fulfills `payment.captured`.
+ * Internal errors un-record the event and return 500 so Razorpay retries it —
+ * fulfillment is idempotent and resumable, so a retry finishes the job.
  */
 export async function POST(request: NextRequest) {
     let rawBody: string;
@@ -57,9 +60,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true, ignored: "parse_error" });
     }
 
+    const db = await getDatabase();
     try {
-        const db = await getDatabase();
-
         // Replay guard.
         const seen = await recordProviderEvent(
             db,
@@ -139,10 +141,19 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ ok: true });
     } catch (err: any) {
-        // Signature was valid; swallow internal errors so Razorpay doesn't
-        // hammer retries. Surfaced in logs / delivery records for replay.
+        // Forget the event so Razorpay's retry is processed instead of being
+        // swallowed by the replay guard, and ask it to retry with a 5xx.
         console.error("[webhook/razorpay] fulfillment error:", err);
-        return NextResponse.json({ ok: true, deferred: true });
+        if (event.eventId) {
+            await db
+                .prepare(
+                    "DELETE FROM provider_webhook_events WHERE provider = 'razorpay' AND provider_event_id = ?",
+                )
+                .bind(event.eventId)
+                .run()
+                .catch(() => {});
+        }
+        return NextResponse.json({ error: "processing_failed" }, { status: 500 });
     }
 }
 
@@ -186,8 +197,12 @@ async function handleSubscriptionEvent(
     // Update DB status for non-charge events. `charged` falls through to
     // the main fulfillment path which writes status='active' via the
     // upsert in fulfillPayment.
-    if (status && status !== "charged") {
-        const dbStatus = mapSubStatus(status);
+    // Captured BEFORE the update below sets it: a cancel_at that was already
+    // there means /v1/subscriptions/cancel notified the app inline.
+    const alreadyNotifiedCancel = !!subRow?.cancel_at;
+
+    const dbStatus = status && status !== "charged" ? mapSubStatus(status) : null;
+    if (dbStatus) {
         if (subRow) {
             await db
                 .prepare(
@@ -219,6 +234,16 @@ async function handleSubscriptionEvent(
                 providerSubscriptionId: providerSubId,
                 status: "active",
             });
+            if (session.customer_id) {
+                const razorpay = await razorpayFromEnv(getEnv);
+                await cancelSupersededSubscriptions(
+                    db,
+                    razorpay,
+                    session.app_id,
+                    session.customer_id,
+                    providerSubId,
+                );
+            }
         }
         return NextResponse.json({ ok: true, subscription: "activated" });
     }
@@ -245,7 +270,12 @@ async function handleSubscriptionEvent(
     // active through period_end but the buyer needs to fix their card —
     // we send a `failed=true` flag.
     if (status === "cancelled" || status === "halted") {
-        await fireGracefulCancelWebhook(db, providerSubId, status);
+        await fireGracefulCancelWebhook(
+            db,
+            providerSubId,
+            status,
+            alreadyNotifiedCancel,
+        );
     }
 
     return NextResponse.json({
@@ -264,10 +294,11 @@ async function fireGracefulCancelWebhook(
     db: D1Database,
     providerSubId: string,
     status: "cancelled" | "halted",
+    alreadyNotifiedCancel: boolean,
 ): Promise<void> {
     const sub = (await db
         .prepare(
-            `SELECT s.id, s.app_id, s.tier, s.current_period_end, s.cancel_at,
+            `SELECT s.id, s.app_id, s.tier, s.product_id, s.current_period_end, s.cancel_at,
                     c.external_uid, a.slug AS app_slug
              FROM subscriptions s
              JOIN customers c ON c.id = s.customer_id
@@ -280,6 +311,7 @@ async function fireGracefulCancelWebhook(
               id: string;
               app_id: string;
               tier: string;
+              product_id: string | null;
               current_period_end: string | null;
               cancel_at: string | null;
               external_uid: string;
@@ -294,7 +326,7 @@ async function fireGracefulCancelWebhook(
     // is set. Skip the outbound — the consuming app already sent the
     // cancellation email when the buyer clicked Cancel. Halt events
     // (charge failures) still fire because they're a different signal.
-    if (status === "cancelled" && sub.cancel_at) {
+    if (status === "cancelled" && alreadyNotifiedCancel) {
         console.log(
             "[webhook/razorpay] skipping cancellation outbound for sub=%s — already notified inline at %s",
             providerSubId,
@@ -302,10 +334,6 @@ async function fireGracefulCancelWebhook(
         );
         return;
     }
-
-    const { getWebhookEndpoint } = await import("@/lib/repo");
-    const endpoint = await getWebhookEndpoint(db, sub.app_id);
-    if (!endpoint) return;
 
     // For halted events, distinguish UPI-mandate-revocation from
     // exhausted-card-retries by looking at recent payment.failed
@@ -337,6 +365,21 @@ async function fireGracefulCancelWebhook(
         failed = !!recentFail;
     }
 
+    // Email the buyer (Elixpo Mails). A UPI-mandate revoke halts the sub
+    // without a failed charge — that reads to the buyer as a cancellation.
+    await notifyBuyer(db, {
+        appId: sub.app_id,
+        event: failed ? "payment.failed" : "subscription.cancelled",
+        externalUid: sub.external_uid,
+        ref: `${sub.id}:${sub.current_period_end ?? ""}`,
+        tier: sub.tier,
+        productId: sub.product_id,
+        periodEnd: sub.current_period_end,
+    });
+
+    const endpoint = await getWebhookEndpoint(db, sub.app_id);
+    if (!endpoint) return;
+
     const { fireEntitlementUpdated } = await import("@/lib/webhooks");
     // The entitlement stays ACTIVE until period_end — the consumer
     // shouldn't downgrade until then. We surface `cancelled`/`halted`
@@ -354,10 +397,15 @@ async function fireGracefulCancelWebhook(
     } as any);
 }
 
-function mapSubStatus(razorpayStatus: string): string {
+/** Map a Razorpay subscription status to ours; null = leave the row alone. */
+function mapSubStatus(razorpayStatus: string): string | null {
     switch (razorpayStatus) {
         case "activated":
+        case "authenticated":
+        case "resumed":
             return "active";
+        case "pending": // a renewal charge failed and is being retried
+            return "past_due";
         case "paused":
             return "past_due";
         case "halted":
@@ -367,7 +415,8 @@ function mapSubStatus(razorpayStatus: string): string {
         case "completed":
             return "expired";
         default:
-            return razorpayStatus;
+            // e.g. `updated` — informational, must not overwrite our status.
+            return null;
     }
 }
 

@@ -72,6 +72,12 @@ interface Me {
 
 const ACCOUNTS_PROFILE = "https://accounts.elixpo.com/dashboard/profile";
 
+/** Send signed-out users to Accounts, returning them to the page they wanted. */
+function loginHref(): string {
+    const here = window.location.pathname + window.location.search;
+    return `/login?next=${encodeURIComponent(here)}`;
+}
+
 export default function DashboardLayout({
     children,
 }: {
@@ -90,13 +96,13 @@ export default function DashboardLayout({
             .then((r) => (r.ok ? r.json() : null))
             .then((data: any) => {
                 if (!data) {
-                    window.location.assign("/login");
+                    window.location.assign(loginHref());
                     return;
                 }
                 setMe(data);
                 setChecked(true);
             })
-            .catch(() => window.location.assign("/login"));
+            .catch(() => window.location.assign(loginHref()));
     }, []);
 
     const logout = async () => {
