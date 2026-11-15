@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { ThemeModeProvider, ThemeModeScript } from "@/components/theme-mode";
-import { Sofia_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const SITE_URL = "https://payouts.elixpo.com";
@@ -13,19 +12,12 @@ const OG_IMAGE = {
 };
 
 export const viewport: Viewport = {
-    themeColor: "var(--app-bg)",
-    colorScheme: "light",
+    themeColor: [
+        { media: "(prefers-color-scheme: light)", color: "#fbfbf8" },
+        { media: "(prefers-color-scheme: dark)", color: "#0e1511" },
+    ],
+    colorScheme: "light dark",
 };
-
-const sofiaSans = Sofia_Sans({
-    variable: "--font-sofia-sans",
-    subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-    variable: "--font-geist-mono",
-    subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
     title: {
@@ -130,9 +122,7 @@ export default function RootLayout({
             <head>
                 <ThemeModeScript />
             </head>
-            <body
-                className={`${sofiaSans.variable} ${geistMono.variable} antialiased`}
-            >
+            <body>
                 <a href="#main-content" className="skip-link">
                     Skip to content
                 </a>

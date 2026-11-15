@@ -22,8 +22,8 @@ const field = {
         color: "var(--app-fg)",
         background: "var(--app-overlay)",
         "& fieldset": { borderColor: "var(--app-border)" },
-        "&:hover fieldset": { borderColor: "rgba(155,123,247,0.4)" },
-        "&.Mui-focused fieldset": { borderColor: "#9b7bf7" },
+        "&:hover fieldset": { borderColor: "color-mix(in srgb, var(--app-accent) 40%, transparent)" },
+        "&.Mui-focused fieldset": { borderColor: "var(--app-accent)" },
     },
     "& .MuiInputLabel-root": { color: "var(--app-fg-muted)" },
 };
@@ -32,7 +32,7 @@ const labelSx = {
     fontSize: "0.7rem",
     color: "var(--app-fg-faint)",
     textTransform: "uppercase",
-    letterSpacing: "0.06em",
+    letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
     mb: 0.5,
 };
 
@@ -125,7 +125,7 @@ export default function PayoutsPage() {
     if (loading) {
         return (
             <Box sx={{ display: "grid", placeItems: "center", py: 12 }}>
-                <CircularProgress sx={{ color: "#9b7bf7" }} />
+                <CircularProgress sx={{ color: "var(--app-accent)" }} />
             </Box>
         );
     }
@@ -143,7 +143,7 @@ export default function PayoutsPage() {
                 <Typography sx={{ color: "var(--app-fg-muted)", fontSize: "0.92rem" }}>
                     Connect your bank to receive your app's revenue. Once live, each payment
                     is split to you automatically — you get the amount minus a{" "}
-                    <Box component="span" sx={{ color: "#c4b5fd", fontWeight: 600 }}>
+                    <Box component="span" sx={{ color: "var(--app-accent)", fontWeight: 600 }}>
                         {(feeBps / 100).toFixed(feeBps % 100 ? 1 : 0)}% platform fee
                     </Box>
                     .
@@ -153,7 +153,7 @@ export default function PayoutsPage() {
             {isOwner ? (
                 <GlassCard>
                     <Stack direction="row" spacing={1.5} alignItems="flex-start">
-                        <AccountBalanceIcon sx={{ color: "#86efac", mt: 0.3 }} />
+                        <AccountBalanceIcon sx={{ color: "var(--app-success)", mt: 0.3 }} />
                         <Box>
                             <Typography sx={{ fontWeight: 700, fontSize: "1.05rem" }}>
                                 Your products settle directly
@@ -185,9 +185,9 @@ export default function PayoutsPage() {
               <>
             {/* Status */}
             {connected && (
-                <GlassCard sx={{ mb: 2, border: `1px solid ${selfAcct ? "rgba(155,123,247,0.35)" : active ? "rgba(134,239,172,0.3)" : "rgba(251,191,36,0.3)"}` }}>
+                <GlassCard sx={{ mb: 2, border: `1px solid ${selfAcct ? "color-mix(in srgb, var(--app-accent) 35%, transparent)" : active ? "color-mix(in srgb, var(--app-success) 30%, transparent)" : "color-mix(in srgb, var(--app-warn) 30%, transparent)"}` }}>
                     <Stack direction="row" spacing={1.5} alignItems="center">
-                        <AccountBalanceIcon sx={{ color: selfAcct ? "#c4b5fd" : active ? "#86efac" : "#fbbf24" }} />
+                        <AccountBalanceIcon sx={{ color: selfAcct ? "var(--app-accent)" : active ? "var(--app-success)" : "var(--app-warn)" }} />
                         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                             <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                                 <Typography sx={{ fontWeight: 700 }}>
@@ -200,9 +200,9 @@ export default function PayoutsPage() {
                                         height: 20,
                                         fontSize: "0.62rem",
                                         fontWeight: 700,
-                                        color: selfAcct ? "#c4b5fd" : active ? "#86efac" : "#fbbf24",
-                                        bgcolor: selfAcct ? "rgba(155,123,247,0.12)" : active ? "rgba(134,239,172,0.12)" : "rgba(251,191,36,0.12)",
-                                        border: `1px solid ${selfAcct ? "rgba(155,123,247,0.3)" : active ? "rgba(134,239,172,0.3)" : "rgba(251,191,36,0.3)"}`,
+                                        color: selfAcct ? "var(--app-accent)" : active ? "var(--app-success)" : "var(--app-warn)",
+                                        bgcolor: selfAcct ? "color-mix(in srgb, var(--app-accent) 12%, transparent)" : active ? "color-mix(in srgb, var(--app-success) 12%, transparent)" : "color-mix(in srgb, var(--app-warn) 12%, transparent)",
+                                        border: `1px solid ${selfAcct ? "color-mix(in srgb, var(--app-accent) 30%, transparent)" : active ? "color-mix(in srgb, var(--app-success) 30%, transparent)" : "color-mix(in srgb, var(--app-warn) 30%, transparent)"}`,
                                     }}
                                 />
                             </Stack>
@@ -213,14 +213,14 @@ export default function PayoutsPage() {
                         </Box>
                     </Stack>
                     {selfAcct ? (
-                        <Typography sx={{ color: "#c4b5fd", fontSize: "0.8rem", mt: 1.4 }}>
+                        <Typography sx={{ color: "var(--app-accent)", fontSize: "0.8rem", mt: 1.4 }}>
                             These details match the platform's own bank — marked as{" "}
                             <strong>Self</strong>, so payments settle directly (no split).
                             Ownership verification is required before this is finalised.
                         </Typography>
                     ) : (
                         !active && (
-                            <Typography sx={{ color: "rgba(251,191,36,0.85)", fontSize: "0.8rem", mt: 1.4 }}>
+                            <Typography sx={{ color: "color-mix(in srgb, var(--app-warn) 85%, transparent)", fontSize: "0.8rem", mt: 1.4 }}>
                                 Funds currently settle to Elixpo. Routing to your bank turns on once
                                 your Razorpay linked account is attached & verified.
                             </Typography>
@@ -256,8 +256,8 @@ export default function PayoutsPage() {
                     </Stack>
                 </Stack>
                 {createError && (
-                    <Box sx={{ mt: 1.8, px: 1.6, py: 1.2, borderRadius: "10px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)" }}>
-                        <Typography sx={{ color: "#fbbf24", fontSize: "0.82rem" }}>
+                    <Box sx={{ mt: 1.8, px: 1.6, py: 1.2, borderRadius: "10px", background: "color-mix(in srgb, var(--app-warn) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--app-warn) 30%, transparent)" }}>
+                        <Typography sx={{ color: "var(--app-warn)", fontSize: "0.82rem" }}>
                             Saved, but Razorpay couldn't set up the payout account yet: {createError}
                         </Typography>
                     </Box>
@@ -266,22 +266,22 @@ export default function PayoutsPage() {
                     <Button
                         onClick={save}
                         disabled={busy}
-                        sx={{ textTransform: "none", fontWeight: 600, color: "#fff", px: 2.6, py: 0.9, borderRadius: "10px", background: "#7c5cff", "&:hover": { background: "#8a6dff" }, "&.Mui-disabled": { opacity: 0.5, color: "#fff" } }}
+                        sx={{ textTransform: "none", fontWeight: 600, color: "var(--app-on-ink)", px: 2.6, py: 0.9, borderRadius: "999px", background: "var(--app-ink)", "&:hover": { background: "var(--app-ink)", opacity: 0.86 }, "&.Mui-disabled": { opacity: 0.5, color: "var(--app-on-ink)" } }}
                     >
                         {busy ? "Saving…" : connected ? "Update" : "Connect bank"}
                     </Button>
                     {connected && (
-                        <Button onClick={() => setConfirmDisconnect(true)} disabled={busy} sx={{ textTransform: "none", fontWeight: 600, color: "rgba(248,113,113,0.85)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: "10px", px: 2 }}>
+                        <Button onClick={() => setConfirmDisconnect(true)} disabled={busy} sx={{ textTransform: "none", fontWeight: 600, color: "color-mix(in srgb, var(--app-danger) 85%, transparent)", border: "1px solid color-mix(in srgb, var(--app-danger) 25%, transparent)", borderRadius: "999px", px: 2 }}>
                             Disconnect
                         </Button>
                     )}
                     {saved && (
                         <Stack direction="row" spacing={0.5} alignItems="center">
-                            <CheckCircleIcon sx={{ fontSize: 16, color: "#86efac" }} />
-                            <Typography sx={{ color: "#86efac", fontSize: "0.82rem" }}>Saved</Typography>
+                            <CheckCircleIcon sx={{ fontSize: 16, color: "var(--app-success)" }} />
+                            <Typography sx={{ color: "var(--app-success)", fontSize: "0.82rem" }}>Saved</Typography>
                         </Stack>
                     )}
-                    {err && <Typography sx={{ color: "#f87171", fontSize: "0.82rem" }}>{err}</Typography>}
+                    {err && <Typography sx={{ color: "var(--app-danger)", fontSize: "0.82rem" }}>{err}</Typography>}
                 </Stack>
             </GlassCard>
 

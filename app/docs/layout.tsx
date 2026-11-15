@@ -183,11 +183,11 @@ export default function DocsLayout({
                                         ? "var(--app-overlay)"
                                         : "transparent",
                                     color: active
-                                        ? "#CF4500"
+                                        ? "var(--app-accent)"
                                         : "var(--app-fg-muted)",
                                     "&:hover": {
                                         bgcolor: "var(--app-overlay)",
-                                        color: active ? "#CF4500" : "var(--app-fg)",
+                                        color: active ? "var(--app-accent)" : "var(--app-fg)",
                                     },
                                 }}
                             >
@@ -327,13 +327,13 @@ export default function DocsLayout({
                                             )
                                         }
                                         sx={{
-                                            color: copied ? "#CF4500" : "var(--app-fg)",
+                                            color: copied ? "var(--app-accent)" : "var(--app-fg)",
                                             textTransform: "none",
                                             fontWeight: 500,
                                             fontSize: "13px",
                                             px: 2.5,
                                             py: 0.5,
-                                            borderRadius: "20px", // Signature button radius
+                                            borderRadius: "999px", // Signature button radius
                                             border: "1.5px solid var(--app-fg)",
                                             background: "var(--app-surface)",
                                             fontFamily: "var(--font-sofia-sans)",
@@ -489,7 +489,7 @@ const navBtn = {
     px: 2.5,
     py: 1,
     border: "1.5px solid",
-    borderRadius: "20px", // Signature button radius
+    borderRadius: "999px", // Signature button radius
     background: "var(--app-surface)",
     "&:hover": { borderColor: "var(--app-fg)", bgcolor: "var(--app-overlay)" },
 };

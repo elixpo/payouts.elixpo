@@ -53,7 +53,7 @@ export default function SubscriptionsPage() {
     if (loading) {
         return (
             <Box sx={{ display: "grid", placeItems: "center", py: 12 }}>
-                <CircularProgress sx={{ color: "#9b7bf7" }} />
+                <CircularProgress sx={{ color: "var(--app-accent)" }} />
             </Box>
         );
     }
@@ -134,10 +134,10 @@ export default function SubscriptionsPage() {
                                                 height: 20,
                                                 fontSize: "0.66rem",
                                                 fontWeight: 700,
-                                                color: "#c4b5fd",
+                                                color: "var(--app-accent)",
                                                 bgcolor:
-                                                    "rgba(155,123,247,0.12)",
-                                                border: "1px solid rgba(155,123,247,0.25)",
+                                                    "color-mix(in srgb, var(--app-accent) 12%, transparent)",
+                                                border: "1px solid color-mix(in srgb, var(--app-accent) 25%, transparent)",
                                             }}
                                         />
                                         <Chip
@@ -154,21 +154,21 @@ export default function SubscriptionsPage() {
                                                 fontSize: "0.62rem",
                                                 fontWeight: 700,
                                                 color: s.cancelled
-                                                    ? "#fca5a5"
+                                                    ? "var(--app-danger)"
                                                     : s.active
-                                                      ? "#86efac"
-                                                      : "#9ca3af",
+                                                      ? "var(--app-success)"
+                                                      : "var(--app-fg-faint)",
                                                 bgcolor: s.cancelled
-                                                    ? "rgba(248,113,113,0.10)"
+                                                    ? "color-mix(in srgb, var(--app-danger) 10%, transparent)"
                                                     : s.active
-                                                      ? "rgba(134,239,172,0.12)"
-                                                      : "rgba(156,163,175,0.12)",
+                                                      ? "color-mix(in srgb, var(--app-success) 12%, transparent)"
+                                                      : "color-mix(in srgb, var(--app-fg-faint) 12%, transparent)",
                                                 border: `1px solid ${
                                                     s.cancelled
-                                                        ? "rgba(248,113,113,0.3)"
+                                                        ? "color-mix(in srgb, var(--app-danger) 30%, transparent)"
                                                         : s.active
-                                                          ? "rgba(134,239,172,0.3)"
-                                                          : "rgba(156,163,175,0.25)"
+                                                          ? "color-mix(in srgb, var(--app-success) 30%, transparent)"
+                                                          : "color-mix(in srgb, var(--app-fg-faint) 25%, transparent)"
                                                 }`,
                                             }}
                                         />
@@ -187,17 +187,17 @@ export default function SubscriptionsPage() {
                                                     s.billing_mode ===
                                                     "recurring"
                                                         ? "#5fb6ff"
-                                                        : "#fbbf24",
+                                                        : "var(--app-warn)",
                                                 bgcolor:
                                                     s.billing_mode ===
                                                     "recurring"
-                                                        ? "rgba(95,182,255,0.10)"
-                                                        : "rgba(251,191,36,0.10)",
+                                                        ? "color-mix(in srgb, var(--app-accent) 10%, transparent)"
+                                                        : "color-mix(in srgb, var(--app-warn) 10%, transparent)",
                                                 border: `1px solid ${
                                                     s.billing_mode ===
                                                     "recurring"
-                                                        ? "rgba(95,182,255,0.3)"
-                                                        : "rgba(251,191,36,0.3)"
+                                                        ? "color-mix(in srgb, var(--app-accent) 30%, transparent)"
+                                                        : "color-mix(in srgb, var(--app-warn) 30%, transparent)"
                                                 }`,
                                             }}
                                         />
@@ -218,7 +218,7 @@ export default function SubscriptionsPage() {
                                                 rel="noopener noreferrer"
                                                 sx={{
                                                     ml: 1,
-                                                    color: "#9b7bf7",
+                                                    color: "var(--app-accent)",
                                                     textDecoration: "none",
                                                     display: "inline-flex",
                                                     alignItems: "center",
