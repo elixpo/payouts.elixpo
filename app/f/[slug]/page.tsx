@@ -9,9 +9,11 @@ import PageShell from "../../components/page-shell";
 import { getDatabase } from "@/lib/d1-client";
 import { type DisplayCurrency, type FundraiserRow, getFundraiserBySlug, publicView } from "@/lib/fundraisers";
 import { formatMoney } from "@/lib/mail-notify";
+import { fundraiserJsonLd, fundraiserMetadata } from "@/lib/fundraiser-seo";
 import { renderMarkdown } from "@/lib/markdown";
 import { SESSION_COOKIE, verifySession } from "@/lib/session";
 import AnimatedProgress from "./animated-progress";
+import HeartyBackground from "./hearty-background";
 import CoverCarousel from "./cover-carousel";
 import StickyContribute from "./sticky-contribute";
 import ContributeForm from "./contribute-form";
@@ -33,26 +35,19 @@ async function loadForViewer(slug: string) {
     return { db, row, preview: false };
 }
 
-function plainExcerpt(md: string, n = 160): string {
-    const t = md.replace(/[#*_`>[\]()-]/g, " ").replace(/\s+/g, " ").trim();
-    return t.length > n ? `${t.slice(0, n - 1)}…` : t;
-}
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
     const { slug } = await params;
     const db = await getDatabase();
     const row = await getFundraiserBySlug(db, slug.toLowerCase());
+    // Drafts, held and deleted pages are never indexed.
     if (!row || row.status === "draft" || row.status === "held" || row.status === "deleted") {
-        return { title: row?.status === "deleted" ? `${row.title} (closed)` : "Fundraiser", robots: { index: false } };
+        return {
+            title: row?.status === "deleted" ? `${row.title} (closed)` : "Fundraiser",
+            robots: { index: false, follow: false },
+        };
     }
-    const description = plainExcerpt(row.body_md) || `Support ${row.title} on Elixpo Pay.`;
-    return {
-        title: row.title,
-        description,
-        alternates: { canonical: `/f/${row.slug}` },
-        openGraph: { title: row.title, description, url: `/f/${row.slug}`, ...(row.cover_url ? { images: [row.cover_url] } : {}) },
-        twitter: { card: row.cover_url ? "summary_large_image" : "summary", title: row.title, description },
-    };
+    return fundraiserMetadata(row);
 }
 
 /** INR for visitors in India (CF-IPCountry, then Accept-Language), USD otherwise. */
@@ -117,28 +112,14 @@ export default async function FundraiserPage({ params }: Params) {
 
     return (
         <PageShell>
-            <div className="fr-bg" aria-hidden>
-                <BgHeart className="b1" />
-                <BgCoin className="b2" />
-                <BgSpark className="b3" />
-                <BgHeart className="b4" />
-                <BgSpark className="b5" />
-                <BgCoin className="b6" />
-                <BgHeart className="b7" />
-                {/* Hearts rising slowly from the bottom, like released balloons. */}
-                <BgHeart className="r r1" />
-                <BgHeart className="r r2" />
-                <BgHeart className="r r3" />
-                <BgHeart className="r r4" />
-                <BgHeart className="r r5" />
-                <BgHeart className="r r6" />
-                <i className="o1" />
-                <i className="o2" />
-                <i className="o3" />
-                <i className="glow g1" />
-                <i className="glow g2" />
-                <i className="glow g3" />
-            </div>
+            {!preview && (
+                <script
+                    type="application/ld+json"
+                    // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD, "<" escaped in fundraiserJsonLd
+                    dangerouslySetInnerHTML={{ __html: fundraiserJsonLd(row as FundraiserRow, view.raised, view.contributors) }}
+                />
+            )}
+            <HeartyBackground />
             <div className="fr-page">
                 {preview && (
                     <div className="fr-banner" role="status">
@@ -344,35 +325,12 @@ export default async function FundraiserPage({ params }: Params) {
     );
 }
 
-const HEART = "M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.2 5.3 3.1 1.7-1.9 3.2-3.1 5.3-3.1 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z";
 
 /** Inline check mark (SVG, never an emoji). */
 function Check() {
     return (
         <svg className="fr-check-ico" viewBox="0 0 24 24" width="12" height="12" aria-hidden>
             <path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-    );
-}
-function BgHeart({ className }: { className: string }) {
-    return (
-        <svg className={className} viewBox="0 0 24 24">
-            <path d={HEART} fill="currentColor" />
-        </svg>
-    );
-}
-function BgSpark({ className }: { className: string }) {
-    return (
-        <svg className={className} viewBox="0 0 24 24">
-            <path d="M12 2l2.1 7.2L21 12l-6.9 2.8L12 22l-2.1-7.2L3 12l6.9-2.8z" fill="currentColor" />
-        </svg>
-    );
-}
-function BgCoin({ className }: { className: string }) {
-    return (
-        <svg className={className} viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-            <path d="M8.5 8h7M8.5 11h7M9 8c4 0 4 6 0 6l5.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
     );
 }
