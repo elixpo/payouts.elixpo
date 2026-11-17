@@ -13,6 +13,8 @@ import MenuBookIcon from "@mui/icons-material/MenuBook";
 import PersonIcon from "@mui/icons-material/Person";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import SpaceDashboardIcon from "@mui/icons-material/SpaceDashboard";
+import GavelIcon from "@mui/icons-material/Gavel";
+import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
 import WebhookIcon from "@mui/icons-material/Webhook";
 import {
     Box,
@@ -41,6 +43,7 @@ import BackgroundAurora from "../components/background-aurora";
 const NAV = [
     { label: "Overview", icon: SpaceDashboardIcon, href: "/dashboard" },
     { label: "Products", icon: InventoryIcon, href: "/dashboard/products" },
+    { label: "Fundraisers", icon: VolunteerActivismIcon, href: "/dashboard/fundraisers" },
     {
         label: "Webhooks",
         icon: WebhookIcon,
@@ -68,6 +71,7 @@ interface Me {
     email: string;
     avatar: string | null;
     merchant: { id: string; name: string };
+    is_admin?: boolean;
 }
 
 const ACCOUNTS_PROFILE = "https://accounts.elixpo.com/dashboard/profile";
@@ -247,7 +251,7 @@ export default function DashboardLayout({
                                 spacing={0.5}
                                 sx={{ flexGrow: 1, overflowX: "auto" }}
                             >
-                                {NAV.map((item) => {
+                                {[...NAV, ...(me?.is_admin ? [{ label: "Moderation", icon: GavelIcon, href: "/dashboard/moderation" }] : [])].map((item) => {
                                     const active = isActive(item.href);
                                     return (
                                         <Button

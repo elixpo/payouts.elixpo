@@ -1,14 +1,5 @@
 /* Home page — Elixpo editorial layout (shared language with research.elixpo). */
 
-.actions { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 2rem; }
-.actions a {
-  min-height: 48px; display: inline-flex; align-items: center; justify-content: center;
-  padding: 0.8rem 1.15rem; border: 1px solid var(--app-ink); border-radius: 999px;
-  color: var(--app-fg); font-size: 0.78rem; font-weight: 700; text-decoration: none;
-  transition: opacity 0.2s ease;
-}
-.actions a:first-child { background: var(--app-ink); color: var(--app-on-ink); }
-.actions a:hover { opacity: 0.8; }
 
 /* ── Hero ── */
 .pay-hero {

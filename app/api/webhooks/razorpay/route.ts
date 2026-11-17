@@ -15,6 +15,7 @@ import {
     getWebhookEndpoint,
     upsertRecurringSubscription,
 } from "@/lib/repo";
+import { markContributionPaid } from "@/lib/fundraisers";
 import { notifyBuyer } from "@/lib/mail-notify";
 
 /**
@@ -102,6 +103,20 @@ export async function POST(request: NextRequest) {
         // otherwise fall back to the order id. Without this branching,
         // recurring renewals returned "no_session" forever and the
         // entitlement was never extended.
+        // Fundraiser contributions are one-time orders outside the app/session
+        // model. markContributionPaid is idempotent (conditional UPDATE), so a
+        // replayed webhook or a race with the client confirm counts once.
+        if (!event.providerSubscriptionId && event.providerOrderId) {
+            const fr = await markContributionPaid(
+                db,
+                { orderId: event.providerOrderId },
+                event.providerPaymentId ?? null,
+            );
+            if (fr.contributionId) {
+                return NextResponse.json({ ok: true, contribution: fr.contributionId, counted: fr.newlyPaid });
+            }
+        }
+
         let session: any = null;
         if (event.providerSubscriptionId) {
             session = await getCheckoutSessionBySubscription(

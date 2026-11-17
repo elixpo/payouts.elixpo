@@ -43,6 +43,7 @@ const DOCS_NAV = [
     { label: "Webhooks", href: "/docs/webhooks" },
     { label: "Entitlements API", href: "/docs/entitlements" },
     { label: "Buyer emails", href: "/docs/emails" },
+    { label: "Fundraisers", href: "/docs/fundraisers" },
     { label: "Connected payouts", href: "/docs/payouts" },
 ];
 
