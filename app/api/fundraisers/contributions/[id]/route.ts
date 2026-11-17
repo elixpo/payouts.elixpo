@@ -11,7 +11,7 @@ async function load(id: string) {
     const c = (await db
         .prepare(
             `SELECT c.id, c.status, c.amount, c.currency, c.display_amount, c.display_currency, c.name,
-                    c.provider_order_id, c.thanks_email_status, f.slug, f.title, f.thank_you_message, f.owner_name
+                    c.provider_order_id, c.thanks_email_status, f.slug, f.title, f.thank_you_message, f.owner_name, f.display_name
              FROM contributions c JOIN fundraisers f ON f.id = c.fundraiser_id WHERE c.id = ?`,
         )
         .bind(id)
@@ -32,7 +32,8 @@ function view(c: any) {
         fundraiser: {
             slug: c.slug,
             title: c.title,
-            owner_name: c.owner_name,
+            // The creator's public name (display name, else account name).
+            owner_name: (c.display_name || "").trim() || c.owner_name,
             thank_you_message: c.thank_you_message,
         },
     };
