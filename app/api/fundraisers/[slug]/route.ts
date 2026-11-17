@@ -16,8 +16,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     if (!row || row.status === "draft") {
         return NextResponse.json({ error: "not_found" }, { status: 404 });
     }
-    if (row.status === "held") {
-        return NextResponse.json({ slug: row.slug, status: "held" }, { headers: { "Cache-Control": "no-store" } });
+    if (row.status === "held" || row.status === "deleted") {
+        return NextResponse.json(
+            { slug: row.slug, status: row.status, title: row.status === "deleted" ? row.title : undefined },
+            { headers: { "Cache-Control": "no-store" } },
+        );
     }
     return NextResponse.json(await publicView(db, row), {
         headers: { "Cache-Control": "public, max-age=0, s-maxage=10, stale-while-revalidate=30" },

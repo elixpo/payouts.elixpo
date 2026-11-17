@@ -341,6 +341,27 @@ await call(moderation.POST, "POST", "/api/dashboard/moderation", { cookie: owner
 r = await call(dashOne.GET, "GET", `/api/dashboard/fundraisers/${f.id}`, { cookie: ownerCookie, params: { id: f.id } });
 ok(r.json.fundraiser.status === "closed", "admin restore → closed (owner can re-open)");
 
+// ── 5b. Delete ─────────────────────────────────────────────────────────
+r = await call(dashOne.DELETE, "DELETE", `/api/dashboard/fundraisers/${other.id}`, { cookie: ownerCookie, params: { id: other.id } });
+ok(r.status === 404, "can't delete another merchant's fundraiser", r.json);
+r = await call(dashOne.DELETE, "DELETE", `/api/dashboard/fundraisers/${other.id}`, { cookie: otherCookie, params: { id: other.id } });
+ok(r.json.deleted === "hard", "never-published draft is removed outright", r.json);
+r = await call(dash.POST, "POST", "/api/dashboard/fundraisers", { cookie: otherCookie, body: { title: "Other fund", goal_amount: 50000 } });
+ok(r.status === 201 && r.json.fundraiser.slug === other.slug, "its link is free to reuse", r.json);
+
+r = await call(dashOne.DELETE, "DELETE", `/api/dashboard/fundraisers/${f.id}`, { cookie: ownerCookie, params: { id: f.id } });
+ok(r.json.deleted === "soft", "published fundraiser is soft-deleted", r.json);
+r = await call(pub.GET, "GET", `/api/fundraisers/${f.slug}`, { params: { slug: f.slug } });
+ok(r.json.status === "deleted" && r.json.title === f.title && r.json.raised === undefined, "public API: deleted status + title only", r.json);
+r = await call(contribute.POST, "POST", `/api/fundraisers/${f.slug}/contribute`, { params: { slug: f.slug }, body: { currency: "INR", amount: 25000, email: "z@x.test" } });
+ok(r.status === 409, "deleted fundraiser takes no payments", r.json);
+r = await call(dashOne.PATCH, "PATCH", `/api/dashboard/fundraisers/${f.id}`, { cookie: ownerCookie, params: { id: f.id }, body: { action: "publish" } });
+ok(r.status === 409 && r.json.error === "deleted", "deleted fundraiser can't be re-published or edited", r.json);
+r = await call(dashCtb.GET, "GET", `/api/dashboard/fundraisers/${f.id}/contributions`, { cookie: ownerCookie, params: { id: f.id } });
+ok(r.status === 200 && r.json.contributions.length >= 3, "contribution records kept after delete", r.json.contributions?.length);
+r = await call(dash.POST, "POST", "/api/dashboard/fundraisers", { cookie: otherCookie, body: { title: "Squat", slug: f.slug, goal_amount: 50000 } });
+ok(r.status === 409, "a deleted fundraiser's link stays reserved (printed QRs can't be hijacked)", r.json);
+
 // ── 6. Markdown safety ────────────────────────────────────────────────────
 const html = renderMarkdown('# Hi\n<img src=x onerror=alert(1)> **b** [ok](https://x.test) [bad](javascript:alert(1))');
 ok(!/<img|<script|href="javascript:/i.test(html) && html.includes("&lt;img") && html.includes("<strong>b</strong>") && html.includes('href="https://x.test"'), "markdown escapes HTML and blocks javascript: links", html);

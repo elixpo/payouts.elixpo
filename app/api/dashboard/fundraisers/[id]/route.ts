@@ -76,6 +76,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     sets.push("owner_name = ?", "owner_avatar = ?");
     vals.push(ctx.session.name || ctx.session.email, ctx.session.avatar ?? null);
 
+    if (row.status === "deleted") {
+        return NextResponse.json(
+            { error: "deleted", error_description: "This fundraiser was deleted and can't be changed." },
+            { status: 409 },
+        );
+    }
     const action = body.action as string | undefined;
     if (action === "publish") {
         if (row.status === "held") {
@@ -120,4 +126,37 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
     const fresh = (await ctx.db.prepare("SELECT * FROM fundraisers WHERE id = ?").bind(row.id).first()) as FundraiserRow;
     return NextResponse.json({ fundraiser: await ownerView(ctx.db, fresh) });
+}
+
+/**
+ * DELETE /api/dashboard/fundraisers/:id
+ * - A draft that was never published (so it can't have contributions) is
+ *   removed outright and its link is freed.
+ * - Anything published becomes `deleted`: the public page shows a "no longer
+ *   taking contributions" notice (printed QR codes keep resolving), payments
+ *   stop, the link stays reserved so it can't be reused for someone else's
+ *   fundraiser, and contributions stay readable/exportable for the owner.
+ */
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const r = await load(request, params);
+    if (r.error) return r.error;
+    const { ctx, row } = r;
+    if (row.status === "deleted") return NextResponse.json({ ok: true, deleted: "soft" });
+
+    const hasMoney = (await ctx.db
+        .prepare("SELECT 1 FROM contributions WHERE fundraiser_id = ? LIMIT 1")
+        .bind(row.id)
+        .first()) as unknown;
+    if (row.status === "draft" && !row.published_at && !hasMoney) {
+        await ctx.db.batch([
+            ctx.db.prepare("DELETE FROM fundraiser_reports WHERE fundraiser_id = ?").bind(row.id),
+            ctx.db.prepare("DELETE FROM fundraisers WHERE id = ? AND merchant_id = ?").bind(row.id, ctx.merchantId),
+        ]);
+        return NextResponse.json({ ok: true, deleted: "hard" });
+    }
+    await ctx.db
+        .prepare("UPDATE fundraisers SET status = 'deleted', updated_at = datetime('now') WHERE id = ? AND merchant_id = ?")
+        .bind(row.id, ctx.merchantId)
+        .run();
+    return NextResponse.json({ ok: true, deleted: "soft" });
 }

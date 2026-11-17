@@ -11,6 +11,7 @@ import { type DisplayCurrency, type FundraiserRow, getFundraiserBySlug, publicVi
 import { formatMoney } from "@/lib/mail-notify";
 import { renderMarkdown } from "@/lib/markdown";
 import { SESSION_COOKIE, verifySession } from "@/lib/session";
+import AnimatedProgress from "./animated-progress";
 import ContributeForm from "./contribute-form";
 import ReportLink from "./report-link";
 import "../fundraiser.css";
@@ -39,7 +40,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     const { slug } = await params;
     const db = await getDatabase();
     const row = await getFundraiserBySlug(db, slug.toLowerCase());
-    if (!row || row.status === "draft" || row.status === "held") return { title: "Fundraiser", robots: { index: false } };
+    if (!row || row.status === "draft" || row.status === "held" || row.status === "deleted") {
+        return { title: row?.status === "deleted" ? `${row.title} (closed)` : "Fundraiser", robots: { index: false } };
+    }
     const description = plainExcerpt(row.body_md) || `Support ${row.title} on Elixpo Pay.`;
     return {
         title: row.title,
@@ -63,6 +66,31 @@ export default async function FundraiserPage({ params }: Params) {
     const { db, row, preview } = await loadForViewer(slug);
     if (!row) notFound();
 
+    if (row.status === "deleted") {
+        return (
+            <PageShell variant="docs">
+                <div className="fr-thanks fr-ended">
+                    {/* biome-ignore lint/performance/noImgElement: static mascot */}
+                    <img className="fr-ended-mascot" src="/icon.png" alt="" width={88} height={88} />
+                    <p className="eyebrow">Fundraiser closed</p>
+                    <h1 className="display">
+                        Thank you for <em>showing up.</em>
+                    </h1>
+                    <p>
+                        <strong>{row.title}</strong> is no longer taking contributions, so there's nothing to pay here.
+                        Thank you for scanning and for your interest — it genuinely means a lot to the creator.
+                    </p>
+                    <p className="fr-ended-note">
+                        Already contributed? Your payment went through and your receipt email is still valid.
+                    </p>
+                    <div className="actions">
+                        <Link href="/">Explore Elixpo Pay</Link>
+                    </div>
+                </div>
+            </PageShell>
+        );
+    }
+
     if (row.status === "held") {
         return (
             <PageShell variant="docs">
@@ -83,7 +111,6 @@ export default async function FundraiserPage({ params }: Params) {
 
     const view = await publicView(db, row as FundraiserRow);
     const currency = await initialCurrency();
-    const pct = view.goal.amount > 0 ? Math.min(100, (view.raised / view.goal.amount) * 100) : 0;
     const initials = view.owner.name.trim().charAt(0).toUpperCase() || "E";
 
     return (
@@ -126,27 +153,13 @@ export default async function FundraiserPage({ params }: Params) {
                         </div>
                         <h1 className="display fr-title">{view.title}</h1>
 
-                        <div className="fr-progress">
-                            <div className="fr-progress-figs">
-                                <strong>{formatMoney(view.raised, view.goal.currency)}</strong>
-                                <span>raised of {formatMoney(view.goal.amount, view.goal.currency)} goal</span>
-                            </div>
-                            <div
-                                className="fr-bar"
-                                role="progressbar"
-                                aria-valuemin={0}
-                                aria-valuemax={100}
-                                aria-valuenow={Math.round(pct)}
-                            >
-                                <i style={{ width: `${Math.max(pct, view.raised > 0 ? 2 : 0)}%` }} />
-                            </div>
-                            <div className="fr-progress-meta">
-                                <span>{Math.round(pct)}% funded</span>
-                                <span>
-                                    {view.contributors} {view.contributors === 1 ? "contributor" : "contributors"}
-                                </span>
-                            </div>
-                        </div>
+                        <AnimatedProgress
+                            raised={view.raised}
+                            goal={view.goal.amount}
+                            currency={view.goal.currency}
+                            contributors={view.contributors}
+                            closed={row.status === "closed" || view.ended}
+                        />
                     </section>
 
                     <aside className="fr-col-form" aria-label="Contribute">
