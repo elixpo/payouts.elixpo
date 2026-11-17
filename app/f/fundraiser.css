@@ -389,3 +389,44 @@ fieldset.fr-presets { padding: 0; border: 0; }
   .fr-pay-love .fr-float, .fr-pay-love .fr-pay-heart, .fr-particle { animation: none !important; opacity: 0; }
   .fr-pay-love .fr-pay-heart { opacity: 1; }
 }
+
+/* ── Warmer, "hearty" background ──────────────────────────────────────────
+   Soft blush and peach glows, pinker scattered hearts, and a few hearts that
+   rise slowly from the bottom. All behind content, low contrast, static for
+   reduced-motion visitors and dimmer in dark mode. */
+.fr-bg { background:
+    radial-gradient(60vw 50vh at 8% 12%, rgba(240, 80, 138, 0.07), transparent 70%),
+    radial-gradient(50vw 45vh at 95% 70%, rgba(255, 166, 120, 0.08), transparent 70%); }
+.fr-bg .glow { position: absolute; border: 0; border-radius: 50%; filter: blur(40px); opacity: 1; }
+.fr-bg .g1 { width: 340px; height: 340px; left: -80px; top: 30%; background: rgba(240, 80, 138, 0.1); }
+.fr-bg .g2 { width: 300px; height: 300px; right: 4%; top: 6%; background: rgba(255, 176, 138, 0.12); }
+.fr-bg .g3 { width: 260px; height: 260px; left: 42%; bottom: -60px; background: rgba(240, 80, 138, 0.08); }
+/* Scattered hearts: pink and a little larger. */
+.fr-bg .b1, .fr-bg .b4, .fr-bg .b7 { color: #f0508a; opacity: 0.22; }
+.fr-bg .b1 { width: 30px; height: 30px; }
+.fr-bg .b4 { width: 24px; height: 24px; }
+/* Rising hearts. */
+.fr-bg .r { bottom: -40px; top: auto; color: #f0508a; opacity: 0; animation: fr-heart-rise 18s linear infinite; }
+.fr-bg .r1 { left: 6%; width: 18px; height: 18px; animation-delay: 0s; }
+.fr-bg .r2 { left: 22%; width: 12px; height: 12px; animation-duration: 22s; animation-delay: -6s; color: #ff9a7a; }
+.fr-bg .r3 { left: 51%; width: 22px; height: 22px; animation-duration: 26s; animation-delay: -12s; }
+.fr-bg .r4 { left: 68%; width: 14px; height: 14px; animation-duration: 20s; animation-delay: -3s; color: #ff9a7a; }
+.fr-bg .r5 { left: 84%; width: 20px; height: 20px; animation-duration: 24s; animation-delay: -16s; }
+.fr-bg .r6 { left: 94%; width: 12px; height: 12px; animation-duration: 19s; animation-delay: -9s; color: #ff9a7a; }
+@keyframes fr-heart-rise {
+  0% { transform: translate(0, 0) rotate(-8deg); opacity: 0; }
+  10% { opacity: 0.22; }
+  50% { transform: translate(18px, -55vh) rotate(8deg); }
+  85% { opacity: 0.16; }
+  100% { transform: translate(-10px, -112vh) rotate(-6deg); opacity: 0; }
+}
+html[data-theme="dark"] .fr-bg { background:
+    radial-gradient(60vw 50vh at 8% 12%, rgba(240, 80, 138, 0.06), transparent 70%),
+    radial-gradient(50vw 45vh at 95% 70%, rgba(255, 166, 120, 0.05), transparent 70%); }
+html[data-theme="dark"] .fr-bg .glow { opacity: 0.55; }
+@media (max-width: 760px) { .fr-bg .r3, .fr-bg .r6 { display: none; } .fr-bg .glow { filter: blur(30px); } }
+@media (prefers-reduced-motion: reduce) {
+  .fr-bg .r { animation: none; opacity: 0.16; bottom: auto; }
+  .fr-bg .r1 { top: 76%; } .fr-bg .r2 { top: 40%; } .fr-bg .r3 { top: 58%; }
+  .fr-bg .r4 { top: 18%; } .fr-bg .r5 { top: 48%; } .fr-bg .r6 { top: 86%; }
+}

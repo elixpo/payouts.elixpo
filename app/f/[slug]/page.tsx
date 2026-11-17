@@ -125,9 +125,19 @@ export default async function FundraiserPage({ params }: Params) {
                 <BgSpark className="b5" />
                 <BgCoin className="b6" />
                 <BgHeart className="b7" />
+                {/* Hearts rising slowly from the bottom, like released balloons. */}
+                <BgHeart className="r r1" />
+                <BgHeart className="r r2" />
+                <BgHeart className="r r3" />
+                <BgHeart className="r r4" />
+                <BgHeart className="r r5" />
+                <BgHeart className="r r6" />
                 <i className="o1" />
                 <i className="o2" />
                 <i className="o3" />
+                <i className="glow g1" />
+                <i className="glow g2" />
+                <i className="glow g3" />
             </div>
             <div className="fr-page">
                 {preview && (
