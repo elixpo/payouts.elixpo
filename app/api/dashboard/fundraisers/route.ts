@@ -2,7 +2,7 @@ export const runtime = "edge";
 
 import { type NextRequest, NextResponse } from "next/server";
 import { requireDashboard } from "@/lib/dashboard-auth";
-import { type FundraiserRow, ownerView, parseFundraiserInput } from "@/lib/fundraisers";
+import { type FundraiserRow, ownerView, parseFundraiserInput, verifyCoverImage } from "@/lib/fundraisers";
 import { newId } from "@/lib/ids";
 
 /**
@@ -32,6 +32,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "invalid_request", error_description: parsed.error }, { status: 400 });
     }
     const f = parsed.fields;
+    if (f.cover_url) {
+        const cover = await verifyCoverImage(f.cover_url);
+        if (!cover.ok) {
+            return NextResponse.json({ error: "invalid_cover", error_description: cover.error }, { status: 400 });
+        }
+    }
     const id = newId("fundraiser");
     try {
         await ctx.db

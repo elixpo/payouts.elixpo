@@ -25,7 +25,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
     const db = await getDatabase();
     const f = await getFundraiserBySlug(db, slug.toLowerCase());
-    if (!f || f.status === "draft") return NextResponse.json({ error: "not_found" }, { status: 404 });
+    if (!f || f.status === "draft" || f.status === "deleted") {
+        return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
 
     // Light abuse guard: cap open reports per page.
     const open = (await db

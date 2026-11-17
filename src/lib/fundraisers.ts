@@ -13,7 +13,7 @@ import { formatDate, formatMoney, quoteBlockHtml } from "./mail-notify";
 import { isPlatformMerchant } from "./merchant";
 import { sendPlatformMail } from "./platform-mail";
 
-export type FundraiserStatus = "draft" | "live" | "closed" | "held";
+export type FundraiserStatus = "draft" | "live" | "closed" | "held" | "deleted";
 export type DisplayCurrency = "INR" | "USD";
 
 export interface FundraiserRow {
@@ -81,6 +81,112 @@ export function httpsUrl(raw: unknown): string | null {
     } catch {
         return null;
     }
+}
+
+/**
+ * A creator-supplied link (cover image, GitHub/website): https only, a public
+ * hostname (no localhost / private or link-local IPs / .local / .internal),
+ * no embedded credentials, ≤ 2048 chars. Returns the normalised URL or null.
+ */
+export function publicHttpsUrl(raw: unknown): string | null {
+    if (typeof raw !== "string") return null;
+    const v = raw.trim();
+    if (!v || v.length > 2048) return null;
+    let u: URL;
+    try {
+        u = new URL(v);
+    } catch {
+        return null;
+    }
+    if (u.protocol !== "https:" || u.username || u.password) return null;
+    const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    if (!host.includes(".") && !host.includes(":")) return null; // single-label hosts
+    if (host === "localhost" || /\.(localhost|local|internal|lan|home|arpa)$/.test(host)) return null;
+    // IPv4 literals in private / loopback / link-local / CGNAT / unspecified ranges.
+    const v4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (v4) {
+        const [a, b] = [Number(v4[1]), Number(v4[2])];
+        if (a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) ||
+            (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || a >= 224) {
+            return null;
+        }
+    }
+    // IPv6 literals: loopback, unique-local, link-local, mapped.
+    if (host.includes(":") && (host === "::1" || host === "::" || /^(fc|fd|fe8|fe9|fea|feb)/.test(host) || host.startsWith("::ffff:"))) {
+        return null;
+    }
+    u.hash = "";
+    return u.toString();
+}
+
+const MAX_COVER_BYTES = 10 * 1024 * 1024;
+
+/**
+ * Confirm a cover image URL actually serves an image: fetched server-side with
+ * a timeout, must answer 2xx with an image/* content type and ≤ 10 MB. Only the
+ * headers are read; the body is cancelled. Never throws.
+ */
+export async function verifyCoverImage(url: string): Promise<{ ok: true } | { ok: false; error: string }> {
+    try {
+        const res = await fetch(url, {
+            method: "GET",
+            redirect: "follow",
+            headers: { Accept: "image/*", "User-Agent": "ElixpoPay-CoverCheck/1" },
+            signal: AbortSignal.timeout(6000),
+        });
+        // A redirect must not land somewhere we wouldn't accept directly.
+        if (res.url && res.url !== url && !publicHttpsUrl(res.url)) {
+            await res.body?.cancel().catch(() => {});
+            return { ok: false, error: "The cover image URL redirects to an address that isn't allowed." };
+        }
+        const type = (res.headers.get("content-type") || "").toLowerCase();
+        const size = Number(res.headers.get("content-length") || 0);
+        await res.body?.cancel().catch(() => {});
+        if (res.status === 404) return { ok: false, error: "The cover image wasn't found (404). Check the link." };
+        if (!res.ok) return { ok: false, error: `The cover image couldn't be loaded (HTTP ${res.status}).` };
+        if (!type.startsWith("image/")) {
+            return { ok: false, error: "That link isn't an image. Use a direct link to a .jpg, .png or .webp file." };
+        }
+        if (size > MAX_COVER_BYTES) return { ok: false, error: "The cover image is larger than 10 MB." };
+        return { ok: true };
+    } catch {
+        return { ok: false, error: "We couldn't reach the cover image. Check the link and try again." };
+    }
+}
+
+/**
+ * Strictly validate presets from the dashboard: per currency an array of
+ * integers (minor units) within LIMITS, 1–6 values. Duplicates are merged and
+ * values sorted. Unlike normalizePresets (used when READING stored data), this
+ * reports problems instead of silently fixing them.
+ */
+export function validatePresets(
+    input: unknown,
+): { ok: true; presets: Record<DisplayCurrency, number[]> } | { ok: false; error: string } {
+    const src = (input && typeof input === "object" ? input : {}) as Record<string, unknown>;
+    const out: Record<DisplayCurrency, number[]> = { INR: [], USD: [] };
+    for (const cur of ["INR", "USD"] as DisplayCurrency[]) {
+        const sym = cur === "INR" ? "₹" : "$";
+        const arr = src[cur];
+        if (!Array.isArray(arr)) return { ok: false, error: `Add ${sym} preset amounts.` };
+        const vals: number[] = [];
+        for (const v of arr) {
+            const n = typeof v === "number" ? v : Number.NaN;
+            if (!Number.isInteger(n)) return { ok: false, error: `${sym} presets must be whole amounts.` };
+            if (n < LIMITS[cur].min || n > LIMITS[cur].max) {
+                return {
+                    ok: false,
+                    error: `${sym} presets must be between ${sym}${(LIMITS[cur].min / 100).toLocaleString("en-IN")} and ${sym}${(LIMITS[cur].max / 100).toLocaleString("en-IN")}.`,
+                };
+            }
+            vals.push(n);
+        }
+        const uniq = [...new Set(vals)].sort((a, b) => a - b);
+        if (uniq.length === 0) return { ok: false, error: `Add at least one ${sym} preset amount.` };
+        if (uniq.length > 6) return { ok: false, error: `Use at most 6 ${sym} preset amounts.` };
+        out[cur] = uniq;
+    }
+    return { ok: true, presets: out };
 }
 
 /** Sanitise presets: integers within limits, unique, ascending, ≤ 6 each. */
@@ -366,11 +472,17 @@ export function parseFundraiserInput(
     }
     for (const k of ["cover_url", "link_url"] as const) {
         if (!partial || has(k)) {
-            const v = body?.[k];
-            if (v == null || v === "") f[k] = null;
+            const v = typeof body?.[k] === "string" ? body[k].trim() : body?.[k];
+            // An untouched prefilled "https://" means "no link".
+            if (v == null || v === "" || v === "https://") f[k] = null;
             else {
-                const u = httpsUrl(v);
-                if (!u) return { ok: false, error: `${k === "cover_url" ? "Cover image" : "Link"} must be an https:// URL.` };
+                const u = publicHttpsUrl(v);
+                if (!u) {
+                    return {
+                        ok: false,
+                        error: `${k === "cover_url" ? "Cover image" : "GitHub or website"} must be a public https:// link.`,
+                    };
+                }
                 f[k] = u;
             }
         }
@@ -382,7 +494,13 @@ export function parseFundraiserInput(
         }
         f.goal_amount = g;
     }
-    if (!partial || has("presets")) f.presets_json = JSON.stringify(normalizePresets(body?.presets));
+    if (has("presets")) {
+        const pr = validatePresets(body?.presets);
+        if (!pr.ok) return { ok: false, error: pr.error };
+        f.presets_json = JSON.stringify(pr.presets);
+    } else if (!partial) {
+        f.presets_json = JSON.stringify(DEFAULT_PRESETS);
+    }
     if (!partial || has("thank_you_message")) {
         const m = String(body?.thank_you_message ?? "").trim();
         if (m.length > 500) return { ok: false, error: "Thank-you message can be at most 500 characters." };
