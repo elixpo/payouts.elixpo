@@ -77,7 +77,6 @@ export default function ContributeForm({
     const [cur, setCur] = useState<Cur>(initialCurrency);
     const [picked, setPicked] = useState<number | null>(startPick(initialCurrency));
     const [emailTouched, setEmailTouched] = useState(false);
-    const [showFlow, setShowFlow] = useState(false);
     const [custom, setCustom] = useState("");
     const [name, setName] = useState("");
     const [showName, setShowName] = useState(true);
@@ -204,18 +203,20 @@ export default function ContributeForm({
         }
     };
 
+    const optionalFilled = !!(name.trim() || message.trim());
     return (
         <>
-            <h2>Contribute</h2>
-            <p className="fr-sub">Any amount helps. No account needed.</p>
-
-            <fieldset className="fr-switch" aria-label="Currency">
-                {(["INR", "USD"] as Cur[]).map((c) => (
-                    <button key={c} type="button" aria-pressed={cur === c} onClick={() => switchCurrency(c)}>
-                        {SYMBOL[c]} {c}
-                    </button>
-                ))}
-            </fieldset>
+            <div className="fr-card-head">
+                <h2>Contribute</h2>
+                <fieldset className="fr-switch" aria-label="Currency">
+                    {(["INR", "USD"] as Cur[]).map((c) => (
+                        <button key={c} type="button" aria-pressed={cur === c} onClick={() => switchCurrency(c)}>
+                            {SYMBOL[c]} {c}
+                        </button>
+                    ))}
+                </fieldset>
+            </div>
+            <p className="fr-sub">Any amount helps · no account needed</p>
 
             <fieldset className="fr-presets" aria-label="Choose an amount">
                 {presets[cur].map((p) => (
@@ -235,31 +236,29 @@ export default function ContributeForm({
                 ))}
             </fieldset>
 
-            <div className="fr-field">
-                <label htmlFor="fr-custom">Or enter an amount</label>
+            <div className="fr-field fr-field-tight">
                 <div className="fr-amount">
                     <span aria-hidden>{SYMBOL[cur]}</span>
                     <input
                         id="fr-custom"
                         inputMode="decimal"
                         autoComplete="off"
-                        placeholder={(lim.min / 100).toString()}
+                        aria-label={`Other amount, minimum ${fmt(lim.min, cur)}`}
+                        placeholder={`Other amount (min ${fmt(lim.min, cur)})`}
                         value={custom}
                         onChange={(e) => setCustom(e.target.value.replace(/[^\d.,]/g, ""))}
                         aria-invalid={belowMin || aboveMax}
                         aria-describedby="fr-amount-hint"
                     />
                 </div>
-                <p id="fr-amount-hint" className={`fr-hint${belowMin || aboveMax ? " bad" : ""}`}>
-                    {belowMin
-                        ? `The minimum is ${fmt(lim.min, cur)}.`
-                        : aboveMax
-                          ? `The maximum is ${fmt(lim.max, cur)} per contribution.`
-                          : `Minimum ${fmt(lim.min, cur)}.`}
-                </p>
+                {(belowMin || aboveMax) && (
+                    <p id="fr-amount-hint" className="fr-hint bad">
+                        {belowMin ? `The minimum is ${fmt(lim.min, cur)}.` : `The maximum is ${fmt(lim.max, cur)} per contribution.`}
+                    </p>
+                )}
             </div>
 
-            <div className="fr-field">
+            <div className="fr-field fr-field-tight">
                 <label htmlFor="fr-email">Email for your receipt</label>
                 <input
                     id="fr-email"
@@ -289,21 +288,26 @@ export default function ContributeForm({
                     </p>
                 )}
             </div>
-            <div className="fr-field">
-                <label htmlFor="fr-name">Your name (optional)</label>
-                <input id="fr-name" autoComplete="name" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-            <label className="fr-check">
-                <input type="checkbox" checked={showName} onChange={(e) => setShowName(e.target.checked)} />
-                Show my name on the page
-            </label>
-            <div className="fr-field">
-                <label htmlFor="fr-msg">Message (optional)</label>
-                <textarea id="fr-msg" maxLength={280} value={message} onChange={(e) => setMessage(e.target.value)} />
-            </div>
+
+            {/* Optional details fold away so the Pay button stays in the first screen. */}
+            <details className="fr-optional" open={optionalFilled || undefined}>
+                <summary>Add your name or a message (optional)</summary>
+                <div className="fr-field fr-field-tight">
+                    <label htmlFor="fr-name">Your name</label>
+                    <input id="fr-name" autoComplete="name" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+                <label className="fr-check">
+                    <input type="checkbox" checked={showName} onChange={(e) => setShowName(e.target.checked)} />
+                    Show my name on the page
+                </label>
+                <div className="fr-field fr-field-tight">
+                    <label htmlFor="fr-msg">Message</label>
+                    <textarea id="fr-msg" maxLength={280} value={message} onChange={(e) => setMessage(e.target.value)} />
+                </div>
+            </details>
 
             <button type="button" className="fr-pay" onClick={pay} disabled={busy || !validAmount || (emailTouched && !emailOk)}>
-                {busy ? "Opening payment…" : validAmount ? `Pay ${fmt(amount, cur)}` : "Pay"}
+                {busy ? "Opening payment…" : validAmount ? `🔒 Pay ${fmt(amount, cur)}` : "Pay"}
             </button>
             {error && (
                 <p className="fr-error" role="alert">
@@ -312,40 +316,15 @@ export default function ContributeForm({
             )}
             <p className="fr-note">
                 {inrCharge != null
-                    ? `${fmt(inrCharge, "INR")} will be charged in INR at today's rate (1 USD = ₹${rate.toFixed(2)}${
-                          rateAsOf ? `, as of ${new Date(rateAsOf).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" })}` : ""
-                      }). International cards accepted. `
+                    ? `${fmt(inrCharge, "INR")} charged in INR at today's rate (1 USD = ₹${rate.toFixed(2)}${
+                          rateAsOf ? `, ${new Date(rateAsOf).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" })}` : ""
+                      }). `
                     : ""}
-                UPI, cards and netbanking via Razorpay. Your email is only used for the receipt.
+                Secured by Razorpay · UPI, cards &amp; netbanking ·{" "}
+                <a href="#money-flow" className="fr-flow-link">
+                    how your money reaches {ownerName.split(" ")[0]} ↓
+                </a>
             </p>
-            <button type="button" className="fr-flow-toggle" aria-expanded={showFlow} onClick={() => setShowFlow((v) => !v)}>
-                🔒 How your money gets to {ownerName} {showFlow ? "▴" : "▾"}
-            </button>
-            {showFlow && (
-                <div className="fr-flow">
-                    <ol>
-                        <li>
-                            <b>You pay</b>
-                            <span>UPI, card or netbanking on Razorpay's secure checkout — we never see card details.</span>
-                        </li>
-                        <li>
-                            <b>Razorpay</b>
-                            <span>An RBI-licensed payment gateway confirms the payment.</span>
-                        </li>
-                        <li>
-                            <b>Elixpo Pay</b>
-                            <span>Records it, updates the total and emails your receipt.</span>
-                        </li>
-                        <li>
-                            <b>{ownerName}</b>
-                            <span>Paid to their bank account, verified through Razorpay KYC.</span>
-                        </li>
-                    </ol>
-                    <a href="/docs/fundraisers#money-flow" target="_blank" rel="noopener noreferrer">
-                        Read how fundraisers work ↗
-                    </a>
-                </div>
-            )}
         </>
     );
 }
