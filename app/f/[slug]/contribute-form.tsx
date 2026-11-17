@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 type Cur = "INR" | "USD";
 
@@ -23,6 +23,91 @@ function loadRazorpay(): Promise<boolean> {
         s.onerror = () => resolve(false);
         document.body.appendChild(s);
     });
+}
+
+const HEART_PATH =
+    "M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.2 5.3 3.1 1.7-1.9 3.2-3.1 5.3-3.1 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z";
+const SPARK_PATH = "M12 2l2.1 7.2L21 12l-6.9 2.8L12 22l-2.1-7.2L3 12l6.9-2.8z";
+
+interface Particle {
+    id: number;
+    kind: "heart" | "spark";
+    dx: number;
+    dy: number;
+    rot: number;
+    size: number;
+    delay: number;
+}
+
+/**
+ * The pink Pay button: a heart icon, hearts drifting up on hover (CSS) and a
+ * burst of hearts and sparkles on click. All SVG (no emoji); static for
+ * visitors who prefer reduced motion.
+ */
+function HeartPayButton({ onClick, disabled, children }: { onClick: () => void; disabled: boolean; children: React.ReactNode }) {
+    const [burst, setBurst] = useState<Particle[]>([]);
+    const seq = useRef(0);
+    const fire = () => {
+        if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        const parts: Particle[] = Array.from({ length: 12 }, (_, i) => {
+            const angle = (-Math.PI / 2) + ((i / 11) - 0.5) * Math.PI * 1.25 + (Math.random() - 0.5) * 0.3;
+            const dist = 46 + Math.random() * 40;
+            return {
+                id: ++seq.current,
+                kind: i % 3 === 0 ? "spark" : "heart",
+                dx: Math.cos(angle) * dist * 1.6,
+                dy: Math.sin(angle) * dist,
+                rot: (Math.random() - 0.5) * 70,
+                size: 10 + Math.random() * 9,
+                delay: Math.random() * 70,
+            };
+        });
+        setBurst((b) => [...b, ...parts]);
+        const ids = new Set(parts.map((p) => p.id));
+        setTimeout(() => setBurst((b) => b.filter((p) => !ids.has(p.id))), 1100);
+    };
+    return (
+        <div className="fr-pay-wrap">
+            <button
+                type="button"
+                className="fr-pay fr-pay-love"
+                disabled={disabled}
+                onClick={() => {
+                    fire();
+                    onClick();
+                }}
+            >
+                <svg className="fr-pay-heart" viewBox="0 0 24 24" aria-hidden>
+                    <path d={HEART_PATH} />
+                </svg>
+                <span>{children}</span>
+                <i className="fr-float f1" aria-hidden />
+                <i className="fr-float f2" aria-hidden />
+                <i className="fr-float f3" aria-hidden />
+            </button>
+            <span className="fr-burst" aria-hidden>
+                {burst.map((p) => (
+                    <svg
+                        key={p.id}
+                        viewBox="0 0 24 24"
+                        className={`fr-particle ${p.kind}`}
+                        style={
+                            {
+                                "--dx": `${p.dx}px`,
+                                "--dy": `${p.dy}px`,
+                                "--rot": `${p.rot}deg`,
+                                width: p.size,
+                                height: p.size,
+                                animationDelay: `${p.delay}ms`,
+                            } as React.CSSProperties
+                        }
+                    >
+                        <path d={p.kind === "heart" ? HEART_PATH : SPARK_PATH} />
+                    </svg>
+                ))}
+            </span>
+        </div>
+    );
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[a-z]{2,}$/i;
@@ -306,9 +391,9 @@ export default function ContributeForm({
                 </div>
             </details>
 
-            <button type="button" className="fr-pay" onClick={pay} disabled={busy || !validAmount || (emailTouched && !emailOk)}>
-                {busy ? "Opening payment…" : validAmount ? `🔒 Pay ${fmt(amount, cur)}` : "Pay"}
-            </button>
+            <HeartPayButton onClick={pay} disabled={busy || !validAmount || (emailTouched && !emailOk)}>
+                {busy ? "Opening payment…" : validAmount ? `Pay ${fmt(amount, cur)}` : "Pay"}
+            </HeartPayButton>
             {error && (
                 <p className="fr-error" role="alert">
                     {error}

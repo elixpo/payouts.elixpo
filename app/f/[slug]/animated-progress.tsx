@@ -86,7 +86,7 @@ export default function AnimatedProgress({
     const bubble = closed
         ? "Thank you, everyone!"
         : pct >= 100
-          ? "Goal reached! 🎉"
+          ? "Goal reached — thank you!"
           : raised === 0
             ? "Be the first to chip in!"
             : `${Math.round(pct)}% there — ${money(remaining, currency)} to go`;
