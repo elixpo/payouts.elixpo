@@ -52,6 +52,7 @@
         "start": "next start",
         "lint": "biome check .",
         "typecheck": "tsc --noEmit",
+        "test:e2e": "node scripts/e2e.mjs",
         "format": "biome check --write .",
         "db:create": "wrangler d1 create elixpo_pay",
         "db:migrate": "wrangler d1 migrations apply elixpo_pay --remote",
@@ -82,6 +83,7 @@
         "@types/qrcode": "^1.5.5",
         "@types/react": "^19",
         "@types/react-dom": "^19",
+        "esbuild": "^0.25.10",
         "tailwindcss": "^4",
         "typescript": "^5",
         "wrangler": "^4.67.0"

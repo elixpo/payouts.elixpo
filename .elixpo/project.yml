@@ -40,7 +40,7 @@ license:
   trademark_policy: https://elixpo.com/terms
 ci:
   lint_cmd: npm run lint
-  test_cmd: ''
+  test_cmd: npm run test:e2e
   build_cmd: npm run build
 maintainers:
 - github: Circuit-Overtime
