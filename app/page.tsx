@@ -40,6 +40,12 @@ const INDEX = [
         href: "/docs/catalog",
     },
     {
+        tag: "Fundraisers",
+        title: "Raise money with a page and a QR code",
+        body: "Set a goal, share the link or QR, and let anyone chip in with UPI or a card. Thank-you emails and a live total included.",
+        href: "/docs/fundraisers",
+    },
+    {
         tag: "Buyer emails",
         title: "Receipts from your own mailbox",
         body: "Connect Elixpo Mails and every receipt, cancellation and failed-renewal email goes out automatically, designed by you, sent as you.",
@@ -106,14 +112,38 @@ export default function Home() {
                         Payments for your platform, <em>without</em> building one.
                     </h1>
                     <p>
-                        Integrate once: we charge your customers, unlock access the moment they pay, and
-                        send each creator their share straight to their bank. Powered by Razorpay today,
-                        with Stripe coming soon for international payments.
+                        Take payments, unlock access the moment people pay, and send money straight to the
+                        bank — through Razorpay, with UPI, cards and netbanking.
                     </p>
-                    <div className="actions">
-                        <Link href="/login">Start building ↗</Link>
-                        <Link href="/docs/quickstart">Read the quickstart</Link>
-                    </div>
+
+                    {/* One clear next step per visitor type. */}
+                    <nav className="hero-paths" aria-label="Get started">
+                        <Link className="hero-path hero-path-primary" href="/login?next=%2Fdashboard%2Fproducts">
+                            <span className="hero-path-tag">For developers</span>
+                            <b>Take payments in my app</b>
+                            <span className="hero-path-body">
+                                Hosted checkout, subscriptions and signed access webhooks — one API key.
+                            </span>
+                            <span className="hero-path-cta">
+                                Start building <span aria-hidden>→</span>
+                            </span>
+                        </Link>
+                        <Link className="hero-path" href="/login?next=%2Fdashboard%2Ffundraisers">
+                            <span className="hero-path-tag">For creators</span>
+                            <b>Raise money for a project</b>
+                            <span className="hero-path-body">
+                                A fundraiser page with a goal and a QR code. Anyone can chip in, no account needed.
+                            </span>
+                            <span className="hero-path-cta">
+                                Start a fundraiser <span aria-hidden>→</span>
+                            </span>
+                        </Link>
+                    </nav>
+                    <p className="hero-secondary">
+                        Just looking? <Link href="/docs/quickstart">Read the 5-minute quickstart</Link> or{" "}
+                        <Link href="/docs/fundraisers">see how fundraisers work</Link>. You sign in with your Elixpo
+                        account.
+                    </p>
                 </div>
                 <div className="pay-hero-objects" aria-hidden>
                     <span className="orbit orbit-one" />
@@ -132,11 +162,6 @@ export default function Home() {
                         <span>WEBHOOK</span>
                         <b>entitlement ✓</b>
                     </div>
-                </div>
-                <div className="pay-hero-note">
-                    <strong>4</strong>
-                    <span>steps from sign-in</span>
-                    <small>to your first payout</small>
                 </div>
             </section>
 
