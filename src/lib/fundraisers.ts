@@ -9,7 +9,7 @@
 import type { D1Database } from "@cloudflare/workers-types";
 import { appUrl } from "./env";
 import { getUsdInrRate } from "./fx";
-import { formatDate, formatMoney } from "./mail-notify";
+import { formatDate, formatMoney, quoteBlockHtml } from "./mail-notify";
 import { isPlatformMerchant } from "./merchant";
 import { sendPlatformMail } from "./platform-mail";
 
@@ -293,6 +293,9 @@ async function notifyContribution(db: D1Database, contributionId: string): Promi
             payment_id: c.provider_payment_id || "",
             paid_at: formatDate(new Date().toISOString()),
             receipt_note: "Contributions are not tax-deductible.",
+            // Optional sections — empty when there's nothing to show.
+            thank_you_html: quoteBlockHtml(f.thank_you_message, `A note from ${f.owner_name || owner?.name || "the creator"}`),
+            message_html: quoteBlockHtml(c.message, "Your message"),
         },
         `fundraiser.thank_you:${c.id}`,
     );
@@ -312,6 +315,7 @@ async function notifyContribution(db: D1Database, contributionId: string): Promi
             progress_percent: String(progress),
             contributors: String(totals.count),
             dashboard_url: `${base}/dashboard/fundraisers/${f.id}`,
+            message_html: quoteBlockHtml(c.message, `Message from ${contributor}`),
         },
         `fundraiser.new_contribution:${c.id}`,
     );

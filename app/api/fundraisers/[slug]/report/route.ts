@@ -6,6 +6,7 @@ import { appUrl } from "@/lib/env";
 import { getFundraiserBySlug } from "@/lib/fundraisers";
 import { newId } from "@/lib/ids";
 import { PLATFORM_MERCHANT_ID } from "@/lib/merchant";
+import { quoteBlockHtml } from "@/lib/mail-notify";
 import { sendPlatformMail } from "@/lib/platform-mail";
 
 const REASONS = new Set(["scam", "misleading", "inappropriate", "impersonation", "other"]);
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             details: details || "",
             reporter_email: email || "",
             moderation_url: `${base}/dashboard/moderation`,
+            details_html: quoteBlockHtml(details, "Details from the reporter"),
         },
         `fundraiser.report:${id}`,
     );

@@ -128,11 +128,59 @@ export function formatDate(sqlOrIso: string | null | undefined): string {
 }
 
 /** Sign + POST one trigger to Elixpo Mails. Never throws. */
+/**
+ * Elixpo Mails substitutes {{variables}} into the HTML body AND the subject
+ * verbatim, so user-written text (names, messages, titles, report details)
+ * could inject markup into an Elixpo-branded email. Neutralise the characters
+ * that create tags/attributes instead of entity-escaping, which would leak
+ * "&amp;" into plain-text subject lines.
+ */
+export function neutralizeForEmail(value: string): string {
+    return (
+        value
+            .replace(/</g, "‹")
+            .replace(/>/g, "›")
+            .replace(/"/g, "”")
+            // biome-ignore lint/suspicious/noControlCharactersInRegex: strip control chars
+            .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "")
+    );
+}
+
+/** Full HTML escape — only for building the trusted `*_html` blocks below. */
+export function escapeHtml(value: string): string {
+    return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+/**
+ * An optional quote block for a template: empty string when there's no text,
+ * so a template can write {{message_html}} and never show an empty box.
+ */
+export function quoteBlockHtml(text: string | null | undefined, label?: string): string {
+    const t = (text ?? "").trim();
+    if (!t) return "";
+    const body = escapeHtml(t).replace(/\n/g, "<br>");
+    const head = label
+        ? `<div style="font:700 11px/1.4 ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;color:#5f6962;margin-bottom:6px">${escapeHtml(label)}</div>`
+        : "";
+    return `<div style="margin:16px 0;padding:14px 16px;border-left:3px solid #142018;background:#f5f6f2;border-radius:0 10px 10px 0;color:#142018;line-height:1.6">${head}${body}</div>`;
+}
+
 export async function postToMails(
     hook: Pick<MailHookRow, "hook_url" | "signing_secret">,
     body: { to: string; variables: Record<string, string>; idempotency_key: string },
 ): Promise<{ status: number; ok: boolean; json: any; error?: string }> {
-    const rawBody = JSON.stringify(body);
+    // Every value is neutralised except Pay-built `*_html` blocks (escaped at
+    // construction), so no caller can forget to sanitise user text.
+    const variables: Record<string, string> = {};
+    for (const [k, v] of Object.entries(body.variables)) {
+        variables[k] = k.endsWith("_html") ? String(v ?? "") : neutralizeForEmail(String(v ?? ""));
+    }
+    const rawBody = JSON.stringify({ ...body, variables });
     const t = Math.floor(Date.now() / 1000);
     const v1 = await hmacSha256Hex(hook.signing_secret, `${t}.${rawBody}`);
     try {

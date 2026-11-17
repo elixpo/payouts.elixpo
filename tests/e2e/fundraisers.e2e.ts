@@ -259,6 +259,24 @@ ok(typeof r.json === "string" && r.json.includes(`"'=HYPERLINK`) && /text\/csv/.
 r = await call(dashCtb.GET, "GET", `/api/dashboard/fundraisers/${f.id}/contributions`, { cookie: otherCookie, params: { id: f.id } });
 ok(r.status === 404, "another merchant can't read the contributions");
 
+// ── 4b. Email injection: user text can't put markup into an Elixpo email ──
+const before = mails.length;
+r = await call(contribute.POST, "POST", `/api/fundraisers/${f.slug}/contribute`, {
+    params: { slug: f.slug },
+    body: { currency: "INR", amount: 10000, email: "m@x.test", name: '<b>Mallory</b>', show_name: true, message: 'Hi <a href="https://evil.test">claim</a>\nline 2' },
+});
+await call(confirm.POST, "POST", `/api/fundraisers/contributions/${r.json.contribution_id}`, { params: { id: r.json.contribution_id }, body: { test: true } });
+const injected = mails.slice(before);
+const plainVals = injected.flatMap((m) => Object.entries(m.body.variables).filter(([k]) => !k.endsWith("_html")).map(([, v]) => String(v)));
+ok(injected.length === 2 && plainVals.every((v) => !/[<>"]/.test(v)), "plain variables carry no markup characters", plainVals);
+const ownerMsg = injected.find((m) => m.hook.endsWith("/owner"))?.body.variables.message_html ?? "";
+ok(ownerMsg.includes("&lt;a href=&quot;https://evil.test&quot;&gt;") && !ownerMsg.includes("<a ") && ownerMsg.includes("<br>"), "message block is escaped (and keeps line breaks)", ownerMsg);
+const thankVars = injected.find((m) => m.hook.endsWith("/thanks"))?.body.variables ?? {};
+ok(thankVars.thank_you_html.includes("Thank you for backing Oreo!") && thankVars.message_html.includes("Your message"), "thank-you email carries optional note + message blocks", thankVars);
+r = await call(contribute.POST, "POST", `/api/fundraisers/${f.slug}/contribute`, { params: { slug: f.slug }, body: { currency: "INR", amount: 10000, email: "q@x.test" } });
+await call(confirm.POST, "POST", `/api/fundraisers/contributions/${r.json.contribution_id}`, { params: { id: r.json.contribution_id }, body: { test: true } });
+ok(mails[mails.length - 1].body.variables.message_html === "", "no message → empty block (no blank box)", mails[mails.length - 1].body.variables);
+
 // ── 5. Close / report / hold / restore ────────────────────────────────────
 r = await call(dashOne.PATCH, "PATCH", `/api/dashboard/fundraisers/${f.id}`, { cookie: ownerCookie, params: { id: f.id }, body: { action: "close" } });
 ok(r.json.fundraiser.status === "closed", "owner closes the fundraiser");
