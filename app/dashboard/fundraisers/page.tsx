@@ -6,7 +6,8 @@ import AddIcon from "@mui/icons-material/Add";
 import { Alert, Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { formatMoney, GlassCard, StatusChip } from "@/components/dashboard-ui";
+import { formatMoney, GlassCard } from "@/components/dashboard-ui";
+import FundraiserStatusChip from "@/components/fundraiser-status";
 import FundraiserEditor, { EMPTY_DRAFT, type FundraiserDraft, toPayload } from "@/components/fundraiser-editor";
 
 export default function FundraisersPage() {
@@ -37,7 +38,6 @@ export default function FundraisersPage() {
         window.location.assign(`/dashboard/fundraisers/${j.fundraiser.id}`);
     };
 
-    const statusLabel = (s: string) => (s === "live" ? "active" : s === "held" ? "failed" : s === "closed" ? "expired" : "open");
 
     return (
         <Box>
@@ -80,17 +80,19 @@ export default function FundraisersPage() {
                 </GlassCard>
             ) : (
                 <Stack spacing={1.5}>
-                    {rows.map((f) => {
+                    {[...rows]
+                        .sort((a, b) => Number(a.status === "deleted") - Number(b.status === "deleted"))
+                        .map((f) => {
                         const pct = f.goal_amount ? Math.min(100, Math.round((f.raised / f.goal_amount) * 100)) : 0;
                         return (
-                            <GlassCard key={f.id} sx={{ p: { xs: 2, md: 2.5 } }}>
+                            <GlassCard key={f.id} sx={{ p: { xs: 2, md: 2.5 }, opacity: f.status === "deleted" ? 0.6 : 1 }}>
                                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="space-between" alignItems={{ sm: "center" }}>
                                     <Box sx={{ minWidth: 0 }}>
                                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.4 }}>
                                             <Typography component={Link} href={`/dashboard/fundraisers/${f.id}`} sx={{ fontWeight: 700, color: "var(--app-fg)", textDecoration: "none", "&:hover": { textDecoration: "underline" } }}>
                                                 {f.title}
                                             </Typography>
-                                            <StatusChip status={statusLabel(f.status)} />
+                                            <FundraiserStatusChip status={f.status} />
                                         </Stack>
                                         <Typography sx={{ color: "var(--app-fg-muted)", fontSize: "0.82rem", fontFamily: "var(--font-geist-mono)" }}>
                                             /f/{f.slug} · {f.status}

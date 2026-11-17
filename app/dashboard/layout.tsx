@@ -13,6 +13,7 @@ import MenuBookIcon from "@mui/icons-material/MenuBook";
 import PersonIcon from "@mui/icons-material/Person";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import SpaceDashboardIcon from "@mui/icons-material/SpaceDashboard";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import GavelIcon from "@mui/icons-material/Gavel";
 import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
 import WebhookIcon from "@mui/icons-material/Webhook";
@@ -40,30 +41,17 @@ import { makeDashboardTheme } from "@/components/dashboard-ui";
 import { ThemeToggle, useThemeMode } from "@/components/theme-mode";
 import BackgroundAurora from "../components/background-aurora";
 
+// Primary tabs stay visible; the rest live under "More" to keep the bar short.
 const NAV = [
     { label: "Overview", icon: SpaceDashboardIcon, href: "/dashboard" },
     { label: "Products", icon: InventoryIcon, href: "/dashboard/products" },
     { label: "Fundraisers", icon: VolunteerActivismIcon, href: "/dashboard/fundraisers" },
-    {
-        label: "Webhooks",
-        icon: WebhookIcon,
-        href: "/dashboard/webhooks",
-    },
-    {
-        label: "Transactions",
-        icon: ReceiptLongIcon,
-        href: "/dashboard/transactions",
-    },
-    {
-        label: "Payouts",
-        icon: AccountBalanceIcon,
-        href: "/dashboard/payouts",
-    },
-    {
-        label: "My subscriptions",
-        icon: CardMembershipIcon,
-        href: "/dashboard/subscriptions",
-    },
+    { label: "Payouts", icon: AccountBalanceIcon, href: "/dashboard/payouts" },
+];
+const MORE_NAV = [
+    { label: "Transactions", icon: ReceiptLongIcon, href: "/dashboard/transactions", hint: "Every charge across your apps" },
+    { label: "Webhooks", icon: WebhookIcon, href: "/dashboard/webhooks", hint: "Endpoints and delivery logs" },
+    { label: "My subscriptions", icon: CardMembershipIcon, href: "/dashboard/subscriptions", hint: "Plans you pay for" },
 ];
 
 interface Me {
@@ -122,6 +110,13 @@ export default function DashboardLayout({
         window.location.assign("/");
     };
 
+    const [moreEl, setMoreEl] = useState<HTMLElement | null>(null);
+    const moreItems = [
+        ...MORE_NAV,
+        ...(me?.is_admin
+            ? [{ label: "Moderation", icon: GavelIcon, href: "/dashboard/moderation", hint: "Reported fundraisers (admin)" }]
+            : []),
+    ];
     const isActive = (href: string) =>
         href === "/dashboard" ? pathname === href : pathname.startsWith(href);
 
@@ -246,63 +241,60 @@ export default function DashboardLayout({
                                 </Typography>
                             </Box>
 
-                            <Stack
-                                direction="row"
-                                spacing={0.5}
-                                sx={{ flexGrow: 1, overflowX: "auto" }}
-                            >
-                                {[...NAV, ...(me?.is_admin ? [{ label: "Moderation", icon: GavelIcon, href: "/dashboard/moderation" }] : [])].map((item) => {
+                            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexGrow: 1, minWidth: 0 }}>
+                                {NAV.map((item) => {
                                     const active = isActive(item.href);
                                     return (
                                         <Button
                                             key={item.href}
                                             component={Link}
                                             href={item.href}
-                                            startIcon={
-                                                <item.icon
-                                                    sx={{
-                                                        fontSize:
-                                                            "1.1rem !important",
-                                                    }}
-                                                />
-                                            }
-                                            sx={{
-                                                textTransform: "none",
-                                                fontWeight: 600,
-                                                fontSize: "0.85rem",
-                                                whiteSpace: "nowrap",
-                                                px: 1.6,
-                                                borderRadius: "999px",
-                                                color: active
-                                                    ? "var(--app-on-ink)"
-                                                    : "var(--app-fg-muted)",
-                                                bgcolor: active
-                                                    ? "var(--app-ink)"
-                                                    : "transparent",
-                                                "&:hover": {
-                                                    bgcolor: active
-                                                        ? "var(--app-ink)"
-                                                        : "var(--app-overlay)",
-                                                    color: active
-                                                        ? "var(--app-on-ink)"
-                                                        : "var(--app-fg)",
-                                                },
-                                            }}
+                                            aria-current={active ? "page" : undefined}
+                                            startIcon={<item.icon sx={{ fontSize: "1.1rem !important" }} />}
+                                            sx={navBtn(active)}
                                         >
-                                            <Box
-                                                component="span"
-                                                sx={{
-                                                    display: {
-                                                        xs: "none",
-                                                        md: "inline",
-                                                    },
-                                                }}
-                                            >
+                                            <Box component="span" sx={{ display: { xs: "none", md: "inline" } }}>
                                                 {item.label}
                                             </Box>
                                         </Button>
                                     );
                                 })}
+                                <Button
+                                    onClick={(e) => setMoreEl(e.currentTarget)}
+                                    aria-haspopup="menu"
+                                    aria-expanded={!!moreEl}
+                                    endIcon={<ExpandMoreIcon sx={{ fontSize: "1.1rem !important" }} />}
+                                    sx={navBtn(moreItems.some((i) => isActive(i.href)))}
+                                >
+                                    {moreItems.find((i) => isActive(i.href))?.label ?? "More"}
+                                </Button>
+                                <Menu
+                                    anchorEl={moreEl}
+                                    open={!!moreEl}
+                                    onClose={() => setMoreEl(null)}
+                                    anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                                    transformOrigin={{ vertical: "top", horizontal: "left" }}
+                                    slotProps={{ paper: { sx: { mt: 1, borderRadius: "16px", minWidth: 260 } } }}
+                                >
+                                    {moreItems.map((item) => (
+                                        <MenuItem
+                                            key={item.href}
+                                            component={Link}
+                                            href={item.href}
+                                            selected={isActive(item.href)}
+                                            onClick={() => setMoreEl(null)}
+                                            sx={{ py: 1.1, borderRadius: "10px", mx: 0.6 }}
+                                        >
+                                            <ListItemIcon>
+                                                <item.icon fontSize="small" />
+                                            </ListItemIcon>
+                                            <Box>
+                                                <Typography sx={{ fontWeight: 700, fontSize: "0.9rem" }}>{item.label}</Typography>
+                                                <Typography sx={{ color: "var(--app-fg-muted)", fontSize: "0.76rem" }}>{item.hint}</Typography>
+                                            </Box>
+                                        </MenuItem>
+                                    ))}
+                                </Menu>
                             </Stack>
 
                             <ThemeToggle size={36} />
@@ -665,4 +657,23 @@ function AccountItem({
             </ListItemText>
         </MenuItem>
     );
+}
+
+/** Pill tab style shared by the primary tabs and the "More" button. */
+function navBtn(active: boolean) {
+    return {
+        textTransform: "none",
+        fontWeight: 600,
+        fontSize: "0.85rem",
+        whiteSpace: "nowrap",
+        px: 1.6,
+        minWidth: 0,
+        borderRadius: "999px",
+        color: active ? "var(--app-on-ink)" : "var(--app-fg-muted)",
+        bgcolor: active ? "var(--app-ink)" : "transparent",
+        "&:hover": {
+            bgcolor: active ? "var(--app-ink)" : "var(--app-overlay)",
+            color: active ? "var(--app-on-ink)" : "var(--app-fg)",
+        },
+    } as const;
 }

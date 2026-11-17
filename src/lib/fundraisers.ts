@@ -13,7 +13,7 @@ import { formatDate, formatMoney, quoteBlockHtml } from "./mail-notify";
 import { isPlatformMerchant } from "./merchant";
 import { sendPlatformMail } from "./platform-mail";
 
-export type FundraiserStatus = "draft" | "live" | "closed" | "held";
+export type FundraiserStatus = "draft" | "live" | "closed" | "held" | "deleted";
 export type DisplayCurrency = "INR" | "USD";
 
 export interface FundraiserRow {
