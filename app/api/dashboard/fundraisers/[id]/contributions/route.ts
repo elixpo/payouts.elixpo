@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const res = await ctx.db
         .prepare(
-            `SELECT id, amount, currency, display_amount, display_currency, name, show_name, message,
+            `SELECT id, amount, currency, display_amount, display_currency, fx_rate, name, show_name, message,
                     provider_payment_id, paid_at
              FROM contributions WHERE fundraiser_id = ? AND status = 'paid' ORDER BY paid_at DESC LIMIT 5000`,
         )
@@ -33,6 +33,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         currency: String(c.currency),
         display_amount: c.display_amount == null ? null : Number(c.display_amount),
         display_currency: c.display_currency as string | null,
+        fx_rate: c.fx_rate == null ? null : Number(c.fx_rate),
         name: c.name ? String(c.name) : "Anonymous",
         public: !!c.show_name,
         message: c.message as string | null,
@@ -47,13 +48,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
             return `"${safe.replace(/"/g, '""')}"`;
         };
-        const header = ["paid_at", "amount_inr", "picked_amount", "picked_currency", "name", "public", "message", "payment_id"];
+        const header = ["paid_at", "amount_inr", "picked_amount", "picked_currency", "usd_inr_rate", "name", "public", "message", "payment_id"];
         const lines = rows.map((r) =>
             [
                 r.paid_at,
                 (r.amount / 100).toFixed(2),
                 r.display_amount == null ? "" : (r.display_amount / 100).toFixed(2),
                 r.display_currency ?? "",
+                r.fx_rate ?? "",
                 r.name,
                 r.public ? "yes" : "no",
                 r.message ?? "",

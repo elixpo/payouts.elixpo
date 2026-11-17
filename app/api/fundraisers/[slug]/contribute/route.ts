@@ -9,9 +9,9 @@ import {
     getFundraiserBySlug,
     LIMITS,
     payoutReadiness,
-    usdInrRate,
     usdToInrPaise,
 } from "@/lib/fundraisers";
+import { getUsdInrRate } from "@/lib/fx";
 import { newId } from "@/lib/ids";
 import { razorpayFromEnv } from "@/lib/providers/razorpay";
 import { routeTransfers } from "@/lib/route-transfers";
@@ -28,7 +28,7 @@ function bad(error: string, description: string, status = 400) {
  *
  * Validates the amount server-side (limits per currency), records a pending
  * contribution and opens a Razorpay order — always in INR; a USD amount is
- * converted at FUNDRAISER_USD_INR_RATE. When the owner has an active payout
+ * converted at the live USD→INR rate (src/lib/fx.ts). When the owner has an active payout
  * account the order carries a Route transfer so the money reaches them.
  */
 export async function POST(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
@@ -62,17 +62,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const message = String(body.message || "").trim().slice(0, 280) || null;
     const showName = body.show_name === true && !!name;
 
-    // Charge in INR (the only live route); remember what the visitor picked.
-    const charge = currency === "USD" ? usdToInrPaise(amount, await usdInrRate()) : amount;
+    // Charge in INR (the only live route) at the live USD→INR rate; remember
+    // what the visitor picked and the rate used.
+    const fx = currency === "USD" ? await getUsdInrRate() : null;
+    const charge = fx ? usdToInrPaise(amount, fx.rate) : amount;
 
     const id = newId("contribution");
     await db
         .prepare(
             `INSERT INTO contributions
-               (id, fundraiser_id, amount, currency, display_amount, display_currency, name, show_name, email, message)
-             VALUES (?, ?, ?, 'INR', ?, ?, ?, ?, ?, ?)`,
+               (id, fundraiser_id, amount, currency, display_amount, display_currency, fx_rate, name, show_name, email, message)
+             VALUES (?, ?, ?, 'INR', ?, ?, ?, ?, ?, ?, ?)`,
         )
-        .bind(id, f.id, charge, amount, currency, name, showName ? 1 : 0, email, message)
+        .bind(id, f.id, charge, amount, currency, fx?.rate ?? null, name, showName ? 1 : 0, email, message)
         .run();
 
     const razorpay = await razorpayFromEnv(getEnv);

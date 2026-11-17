@@ -47,7 +47,9 @@ export default function FundraisersDocs() {
             <DocP>
                 Payments go through Razorpay Checkout (UPI, cards, netbanking). Visitors in India see rupees; everyone else
                 sees dollars with a switch. Until an international route is live, dollar amounts are{" "}
-                <strong>charged in INR</strong> at a fixed rate, shown on the page before paying.
+                <strong>charged in INR</strong> at today's live USD→INR rate (ECB reference rate, refreshed
+                hourly), shown on the page with its date before paying. The rate used is recorded on each contribution
+                and included in the CSV export.
             </DocP>
 
             <DocH2>Managing it</DocH2>

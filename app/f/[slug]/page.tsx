@@ -157,6 +157,7 @@ export default async function FundraiserPage({ params }: Params) {
                                 presets={view.presets}
                                 limits={view.limits}
                                 rate={view.usd_inr_rate}
+                                rateAsOf={view.usd_inr_as_of}
                                 initialCurrency={currency}
                                 open={view.accepts_payments && !preview}
                                 closedReason={

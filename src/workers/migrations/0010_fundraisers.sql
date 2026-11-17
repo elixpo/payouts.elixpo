@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS contributions (
     currency            TEXT NOT NULL,                -- charged currency (INR)
     display_amount      INTEGER,                      -- what the visitor picked
     display_currency    TEXT,                         --   e.g. 1000 USD (≈ charged INR)
+    fx_rate             REAL,                         -- ₹ per $1 used when display_currency = USD
     name                TEXT,
     show_name           INTEGER NOT NULL DEFAULT 0,
     email               TEXT,                         -- receipt only, never shown

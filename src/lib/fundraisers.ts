@@ -7,7 +7,8 @@
  */
 
 import type { D1Database } from "@cloudflare/workers-types";
-import { appUrl, getEnv } from "./env";
+import { appUrl } from "./env";
+import { getUsdInrRate } from "./fx";
 import { formatDate, formatMoney } from "./mail-notify";
 import { isPlatformMerchant } from "./merchant";
 import { sendPlatformMail } from "./platform-mail";
@@ -105,10 +106,9 @@ export function parsePresets(json: string | null): Record<DisplayCurrency, numbe
     }
 }
 
-/** ₹ per $1 used to convert USD contributions into the INR charge. */
+/** Live ₹ per $1 used to convert USD contributions into the INR charge. */
 export async function usdInrRate(): Promise<number> {
-    const v = Number(await getEnv("FUNDRAISER_USD_INR_RATE"));
-    return Number.isFinite(v) && v > 10 && v < 1000 ? v : 85;
+    return (await getUsdInrRate()).rate;
 }
 
 /** Convert a USD minor amount into the INR (paise) charge, rounded to ₹1. */
@@ -192,10 +192,11 @@ export async function recentSupporters(db: D1Database, fundraiserId: string, lim
 
 /** What the public page / API may see — never owner ids or contributor emails. */
 export async function publicView(db: D1Database, row: FundraiserRow) {
-    const [totals, supporters, readiness] = await Promise.all([
+    const [totals, supporters, readiness, fx] = await Promise.all([
         getTotals(db, row.id),
         recentSupporters(db, row.id),
         payoutReadiness(db, row.merchant_id),
+        getUsdInrRate(),
     ]);
     return {
         slug: row.slug,
@@ -213,7 +214,8 @@ export async function publicView(db: D1Database, row: FundraiserRow) {
         ends_at: row.ends_at,
         ended: hasEnded(row),
         supporters,
-        usd_inr_rate: await usdInrRate(),
+        usd_inr_rate: fx.rate,
+        usd_inr_as_of: fx.as_of,
         limits: LIMITS,
     };
 }

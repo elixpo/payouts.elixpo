@@ -31,6 +31,7 @@ export default function ContributeForm({
     presets,
     limits,
     rate,
+    rateAsOf,
     initialCurrency,
     open,
     closedReason,
@@ -40,6 +41,7 @@ export default function ContributeForm({
     presets: Record<Cur, number[]>;
     limits: Record<Cur, { min: number; max: number }>;
     rate: number;
+    rateAsOf: string;
     initialCurrency: Cur;
     open: boolean;
     closedReason: string;
@@ -247,7 +249,9 @@ export default function ContributeForm({
             )}
             <p className="fr-note">
                 {inrCharge != null
-                    ? `≈ ${fmt(inrCharge, "INR")} will be charged in INR (international cards accepted). `
+                    ? `${fmt(inrCharge, "INR")} will be charged in INR at today's rate (1 USD = ₹${rate.toFixed(2)}${
+                          rateAsOf ? `, as of ${new Date(rateAsOf).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" })}` : ""
+                      }). International cards accepted. `
                     : ""}
                 UPI, cards and netbanking via Razorpay. Your email is only used for the receipt.
             </p>
