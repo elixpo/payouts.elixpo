@@ -8,6 +8,7 @@ import {
     ownerView,
     parseFundraiserInput,
     payoutReadiness,
+    verifyCoverImage,
 } from "@/lib/fundraisers";
 
 /**
@@ -56,6 +57,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         );
     }
     if (parsed.fields.slug === row.slug) delete parsed.fields.slug;
+
+    // Re-check the cover image only when it actually changes.
+    if (parsed.fields.cover_url && parsed.fields.cover_url !== row.cover_url) {
+        const cover = await verifyCoverImage(parsed.fields.cover_url);
+        if (!cover.ok) {
+            return NextResponse.json({ error: "invalid_cover", error_description: cover.error }, { status: 400 });
+        }
+    }
 
     const sets: string[] = [];
     const vals: unknown[] = [];
