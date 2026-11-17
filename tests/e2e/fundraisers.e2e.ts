@@ -35,6 +35,17 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
             });
         }
     }
+    // Stub image host for the cover-image checks.
+    if (url.startsWith("https://img.example.com/")) {
+        if (url.endsWith("/ok.png")) return new Response("png", { status: 200, headers: { "content-type": "image/png", "content-length": "3" } });
+        if (url.endsWith("/page.html")) return new Response("<html>", { status: 200, headers: { "content-type": "text/html" } });
+        if (url.endsWith("/redirect.png")) {
+            const r = new Response("x", { status: 200, headers: { "content-type": "image/png" } });
+            Object.defineProperty(r, "url", { value: "https://10.0.0.5/x.png" });
+            return r;
+        }
+        return new Response("nope", { status: 404, headers: { "content-type": "text/plain" } });
+    }
     return realFetch(input, init);
 }) as typeof fetch;
 
@@ -258,6 +269,33 @@ r = await call(dashCtb.GET, "GET", `/api/dashboard/fundraisers/${f.id}/contribut
 ok(typeof r.json === "string" && r.json.includes(`"'=HYPERLINK`) && /text\/csv/.test(r.headers.get("content-type") || ""), "CSV export, formula injection neutralised", r.json);
 r = await call(dashCtb.GET, "GET", `/api/dashboard/fundraisers/${f.id}/contributions`, { cookie: otherCookie, params: { id: f.id } });
 ok(r.status === 404, "another merchant can't read the contributions");
+
+// ── 4a. Form validation: presets, links, cover image (server-side) ───────
+const mk = (extra: Record<string, unknown>) =>
+    call(dash.POST, "POST", "/api/dashboard/fundraisers", { cookie: ownerCookie, body: { title: "Validation fund", goal_amount: 50000, ...extra } });
+r = await mk({ presets: { INR: [10050.5], USD: [500] } });
+ok(r.status === 400 && /whole amounts/.test(r.json.error_description), "fractional preset rejected", r.json);
+r = await mk({ presets: { INR: [500], USD: [500] } });
+ok(r.status === 400 && /between/.test(r.json.error_description), "out-of-range ₹ preset rejected (₹5 < ₹10)", r.json);
+r = await mk({ presets: { INR: [1000, 2000, 3000, 4000, 5000, 6000, 7000], USD: [500] } });
+ok(r.status === 400 && /at most 6/.test(r.json.error_description), "more than 6 presets rejected", r.json);
+r = await mk({ presets: { INR: [], USD: [500] } });
+ok(r.status === 400 && /at least one/.test(r.json.error_description), "empty preset list rejected", r.json);
+for (const bad of ["http://github.com/x", "https://localhost/x", "https://192.168.1.4/x", "https://user:pw@github.com/x", "javascript:alert(1)"]) {
+    r = await mk({ link_url: bad });
+    ok(r.status === 400, `unsafe link rejected: ${bad}`, r.json);
+}
+r = await mk({ link_url: "https://" });
+ok(r.status === 201 && r.json.fundraiser.link_url === null, "untouched https:// prefill means no link", r.json);
+r = await mk({ cover_url: "https://img.example.com/missing.png" });
+ok(r.status === 400 && /404/.test(r.json.error_description), "cover image 404 rejected", r.json);
+r = await mk({ cover_url: "https://img.example.com/page.html" });
+ok(r.status === 400 && /isn't an image/.test(r.json.error_description), "cover link that isn't an image rejected", r.json);
+r = await mk({ cover_url: "https://img.example.com/redirect.png" });
+ok(r.status === 400 && /redirects/.test(r.json.error_description), "cover redirect to a private address rejected", r.json);
+r = await mk({ slug: "validation-cover", cover_url: "https://img.example.com/ok.png", presets: { INR: [25000, 10000, 10000], USD: [1000] } });
+ok(r.status === 201 && r.json.fundraiser.cover_url === "https://img.example.com/ok.png" && r.json.fundraiser.presets.INR.join() === "10000,25000",
+    "valid cover accepted; presets de-duplicated and sorted", r.json);
 
 // ── 4b. Email injection: user text can't put markup into an Elixpo email ──
 const before = mails.length;
