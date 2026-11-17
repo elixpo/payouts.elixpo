@@ -233,6 +233,16 @@ r = await call(pub.GET, "GET", `/api/fundraisers/${f.slug}`, { params: { slug: f
 ok(r.json.raised === 25000 + usdCharge && r.json.contributors === 2 && r.json.usd_inr_as_of, "total = ₹250 + USD charge; page shows rate date", { raised: r.json.raised, n: r.json.contributors });
 ok(r.json.supporters.some((s: any) => s.name === "Asha") && r.json.supporters.some((s: any) => s.name === "Anonymous"), "supporters: shown name + Anonymous", r.json.supporters);
 
+// Display name overrides the account name publicly.
+r = await call(dashOne.PATCH, "PATCH", `/api/dashboard/fundraisers/${f.id}`, { cookie: ownerCookie, params: { id: f.id }, body: { display_name: "  Oreo   Badge Project " } });
+ok(r.json.fundraiser.display_name === "Oreo Badge Project", "display name saved (whitespace tidied)", r.json.fundraiser?.display_name);
+r = await call(pub.GET, "GET", `/api/fundraisers/${f.slug}`, { params: { slug: f.slug } });
+ok(r.json.owner.name === "Oreo Badge Project", "public page shows the display name", r.json.owner);
+r = await call(dashOne.PATCH, "PATCH", `/api/dashboard/fundraisers/${f.id}`, { cookie: ownerCookie, params: { id: f.id }, body: { display_name: "x".repeat(81) } });
+ok(r.status === 400, "display name over 80 chars rejected", r.json);
+r = await call(contribute.POST, "POST", `/api/fundraisers/${f.slug}/contribute`, { params: { slug: f.slug }, body: { currency: "INR", amount: 25000, email: "a@b" } });
+ok(r.status === 400 && r.json.error === "invalid_email", "email without a real domain rejected", r.json);
+
 const thanks = mails.filter((m) => m.hook.endsWith("/thanks"));
 const owner = mails.filter((m) => m.hook.endsWith("/owner"));
 ok(thanks.length === 2 && owner.length === 2, "1 thank-you + 1 owner email per contribution", mails.map((m) => m.hook));
@@ -293,6 +303,15 @@ r = await mk({ cover_url: "https://img.example.com/page.html" });
 ok(r.status === 400 && /isn't an image/.test(r.json.error_description), "cover link that isn't an image rejected", r.json);
 r = await mk({ cover_url: "https://img.example.com/redirect.png" });
 ok(r.status === 400 && /redirects/.test(r.json.error_description), "cover redirect to a private address rejected", r.json);
+r = await mk({ slug: "covers-many", cover_urls: ["https://img.example.com/ok.png", "https://img.example.com/two/ok.png", "https://"], cover_autoplay: false });
+ok(r.status === 201 && r.json.fundraiser.covers.length === 2 && r.json.fundraiser.cover_autoplay === false && r.json.fundraiser.cover_url === "https://img.example.com/ok.png",
+    "multiple covers saved (blank prefill dropped), autoplay off, first is the main cover", r.json);
+r = await mk({ slug: "covers-too-many", cover_urls: Array.from({ length: 7 }, (_, i) => `https://img.example.com/ok.png?${i}`) });
+ok(r.status === 400 && /at most 6/.test(r.json.error_description), "more than 6 covers rejected", r.json);
+r = await mk({ slug: "covers-bad", cover_urls: ["https://img.example.com/ok.png", "http://img.example.com/x.png"] });
+ok(r.status === 400, "an unsafe link in the cover list is rejected", r.json);
+r = await mk({ slug: "covers-404", cover_urls: ["https://img.example.com/ok.png", "https://img.example.com/missing.png"] });
+ok(r.status === 400 && /Cover image 2/.test(r.json.error_description), "a missing cover is reported by position", r.json);
 r = await mk({ slug: "validation-cover", cover_url: "https://img.example.com/ok.png", presets: { INR: [25000, 10000, 10000], USD: [1000] } });
 ok(r.status === 201 && r.json.fundraiser.cover_url === "https://img.example.com/ok.png" && r.json.fundraiser.presets.INR.join() === "10000,25000",
     "valid cover accepted; presets de-duplicated and sorted", r.json);
@@ -314,6 +333,9 @@ ok(thankVars.thank_you_html.includes("Thank you for backing Oreo!") && thankVars
 r = await call(contribute.POST, "POST", `/api/fundraisers/${f.slug}/contribute`, { params: { slug: f.slug }, body: { currency: "INR", amount: 10000, email: "q@x.test" } });
 await call(confirm.POST, "POST", `/api/fundraisers/contributions/${r.json.contribution_id}`, { params: { id: r.json.contribution_id }, body: { test: true } });
 ok(mails[mails.length - 1].body.variables.message_html === "", "no message → empty block (no blank box)", mails[mails.length - 1].body.variables);
+
+r = await call(pub.GET, "GET", `/api/fundraisers/${f.slug}`, { params: { slug: f.slug } });
+ok(r.json.most_chosen?.INR === 10000, "“Most chosen” comes from real gifts (two ₹100 contributions)", r.json.most_chosen);
 
 // ── 5. Close / report / hold / restore ────────────────────────────────────
 r = await call(dashOne.PATCH, "PATCH", `/api/dashboard/fundraisers/${f.id}`, { cookie: ownerCookie, params: { id: f.id }, body: { action: "close" } });

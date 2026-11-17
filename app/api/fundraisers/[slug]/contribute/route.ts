@@ -16,7 +16,8 @@ import { newId } from "@/lib/ids";
 import { razorpayFromEnv } from "@/lib/providers/razorpay";
 import { routeTransfers } from "@/lib/route-transfers";
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Same rule as the contribute form: a dotted domain ending in a 2+ letter TLD.
+const EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[a-z]{2,}$/i;
 
 function bad(error: string, description: string, status = 400) {
     return NextResponse.json({ error, error_description: description }, { status });

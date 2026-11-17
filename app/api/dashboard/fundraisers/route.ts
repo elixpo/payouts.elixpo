@@ -32,11 +32,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "invalid_request", error_description: parsed.error }, { status: 400 });
     }
     const f = parsed.fields;
-    if (f.cover_url) {
-        const cover = await verifyCoverImage(f.cover_url);
-        if (!cover.ok) {
-            return NextResponse.json({ error: "invalid_cover", error_description: cover.error }, { status: 400 });
-        }
+    // Every cover image must really be an image (checked in parallel).
+    const covers: string[] = f.cover_urls_json ? JSON.parse(f.cover_urls_json) : f.cover_url ? [f.cover_url] : [];
+    const checks = await Promise.all(covers.map((u) => verifyCoverImage(u)));
+    const bad = checks.findIndex((c) => !c.ok);
+    if (bad !== -1) {
+        const c = checks[bad] as { ok: false; error: string };
+        const which = covers.length > 1 ? `Cover image ${bad + 1}: ` : "";
+        return NextResponse.json({ error: "invalid_cover", error_description: `${which}${c.error}` }, { status: 400 });
     }
     const id = newId("fundraiser");
     try {
@@ -44,8 +47,9 @@ export async function POST(request: NextRequest) {
             .prepare(
                 `INSERT INTO fundraisers
                    (id, merchant_id, owner_uid, owner_name, owner_avatar, slug, title, body_md, cover_url, link_url,
-                    goal_amount, goal_currency, presets_json, thank_you_message, ends_at, status)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'INR', ?, ?, ?, 'draft')`,
+                    goal_amount, goal_currency, presets_json, thank_you_message, ends_at, status,
+                    cover_urls_json, cover_autoplay, display_name)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'INR', ?, ?, ?, 'draft', ?, ?, ?)`,
             )
             .bind(
                 id,
@@ -62,6 +66,9 @@ export async function POST(request: NextRequest) {
                 f.presets_json,
                 f.thank_you_message ?? null,
                 f.ends_at ?? null,
+                f.cover_urls_json ?? (f.cover_url ? JSON.stringify([f.cover_url]) : null),
+                f.cover_autoplay ?? 1,
+                f.display_name ?? null,
             )
             .run();
     } catch (err) {

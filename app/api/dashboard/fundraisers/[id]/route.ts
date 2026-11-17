@@ -8,6 +8,7 @@ import {
     ownerView,
     parseFundraiserInput,
     payoutReadiness,
+    coverList,
     verifyCoverImage,
 } from "@/lib/fundraisers";
 
@@ -58,11 +59,27 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
     if (parsed.fields.slug === row.slug) delete parsed.fields.slug;
 
-    // Re-check the cover image only when it actually changes.
-    if (parsed.fields.cover_url && parsed.fields.cover_url !== row.cover_url) {
-        const cover = await verifyCoverImage(parsed.fields.cover_url);
-        if (!cover.ok) {
-            return NextResponse.json({ error: "invalid_cover", error_description: cover.error }, { status: 400 });
+    // Re-check only cover images that weren't already saved.
+    if (parsed.fields.cover_urls_json !== undefined || parsed.fields.cover_url !== undefined) {
+        const before = new Set(coverList(row));
+        const next: string[] = parsed.fields.cover_urls_json
+            ? JSON.parse(parsed.fields.cover_urls_json)
+            : parsed.fields.cover_url
+              ? [parsed.fields.cover_url]
+              : [];
+        const fresh = next.filter((u) => !before.has(u));
+        const checks = await Promise.all(fresh.map((u) => verifyCoverImage(u)));
+        const bad = checks.findIndex((c) => !c.ok);
+        if (bad !== -1) {
+            const c = checks[bad] as { ok: false; error: string };
+            return NextResponse.json(
+                { error: "invalid_cover", error_description: `${next.length > 1 ? `${fresh[bad]}: ` : ""}${c.error}` },
+                { status: 400 },
+            );
+        }
+        // Keep the legacy single-cover column in step with the list.
+        if (parsed.fields.cover_urls_json === undefined) {
+            parsed.fields.cover_urls_json = next.length ? JSON.stringify(next) : null;
         }
     }
 
