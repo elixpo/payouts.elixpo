@@ -180,8 +180,18 @@ export default function FundraiserDetail() {
                             </Button>
                         )}
                         {f.status === "live" ? (
-                            <Button onClick={() => setConfirm("close")} disabled={busy} sx={ghost}>
-                                Close
+                            <Button
+                                onClick={() => setConfirm("close")}
+                                disabled={busy}
+                                sx={{
+                                    ...ghost,
+                                    color: "#fff",
+                                    background: "var(--app-danger)",
+                                    borderColor: "var(--app-danger)",
+                                    "&:hover": { background: "var(--app-danger)", opacity: 0.88, borderColor: "var(--app-danger)" },
+                                }}
+                            >
+                                Close fundraiser
                             </Button>
                         ) : f.status !== "held" ? (
                             <Button onClick={() => patch({ action: "publish" }, "Published — your page is live.")} disabled={busy || !canPublish} sx={ink}>

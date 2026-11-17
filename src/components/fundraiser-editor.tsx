@@ -3,7 +3,9 @@
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CloseIcon from "@mui/icons-material/Close";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
-import { Box, Button, CircularProgress, InputAdornment, Stack, TextField, Typography } from "@mui/material";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import { Box, Button, CircularProgress, FormControlLabel, IconButton, InputAdornment, Stack, Switch, TextField, Typography } from "@mui/material";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type Cur = "INR" | "USD";
@@ -12,7 +14,11 @@ export interface FundraiserDraft {
     title: string;
     slug: string;
     body_md: string;
-    cover_url: string;
+    /** Cover images (slideshow), first is also the social preview. */
+    covers: string[];
+    cover_autoplay: boolean;
+    /** Public name shown instead of the account name. */
+    display_name: string;
     link_url: string;
     /** Digits only, whole rupees. */
     goal_rupees: string;
@@ -27,7 +33,9 @@ export const EMPTY_DRAFT: FundraiserDraft = {
     title: "",
     slug: "",
     body_md: "",
-    cover_url: "",
+    covers: [],
+    cover_autoplay: true,
+    display_name: "",
     link_url: "",
     goal_rupees: "",
     presets_inr: [100, 250, 500, 1000],
@@ -44,6 +52,7 @@ const CUR: Record<Cur, { sym: string; label: string; min: number; max: number; l
 const GOAL_MIN = 100;
 const GOAL_MAX = 10_000_000; // ₹1,00,00,000
 const MAX_PRESETS = 6;
+const MAX_COVERS = 6;
 
 const fmt = (n: number, cur: Cur) =>
     `${CUR[cur].sym}${n.toLocaleString(CUR[cur].locale, { maximumFractionDigits: 2 })}`;
@@ -55,7 +64,9 @@ export function toDraft(f: any): FundraiserDraft {
         title: f.title ?? "",
         slug: f.slug ?? "",
         body_md: f.body_md ?? "",
-        cover_url: f.cover_url ?? "",
+        covers: Array.isArray(f.covers) ? f.covers : f.cover_url ? [f.cover_url] : [],
+        cover_autoplay: f.cover_autoplay !== false,
+        display_name: f.display_name ?? "",
         link_url: f.link_url ?? "",
         goal_rupees: f.goal_amount ? String(Math.round(f.goal_amount / 100)) : "",
         presets_inr: major(f.presets?.INR),
@@ -73,7 +84,9 @@ export function toPayload(d: FundraiserDraft) {
         title: d.title,
         slug: d.slug || undefined,
         body_md: d.body_md,
-        cover_url: cleanUrl(d.cover_url),
+        cover_urls: d.covers.map(cleanUrl).filter(Boolean),
+        cover_autoplay: d.cover_autoplay,
+        display_name: d.display_name.trim(),
         link_url: cleanUrl(d.link_url),
         goal_amount: Number(d.goal_rupees || 0) * 100,
         presets: {
@@ -291,6 +304,170 @@ function HttpsField({ label, value, onChange, placeholder, error, helper, endAdo
     );
 }
 
+/** One cover image link: prefilled https://, test-loaded, thumbnail when found. */
+function CoverField({
+    index,
+    value,
+    onChange,
+    onStatus,
+    onRemove,
+    onMove,
+    count,
+}: {
+    index: number;
+    value: string;
+    onChange: (v: string) => void;
+    onStatus: (s: CoverState["status"]) => void;
+    onRemove: () => void;
+    onMove: (dir: -1 | 1) => void;
+    count: number;
+}) {
+    const url = cleanUrl(value);
+    const err = urlError(value, "Cover image");
+    const [st, setSt] = useState<CoverState>({ status: "empty" });
+    useEffect(() => {
+        if (!url) return setSt({ status: "empty" });
+        if (err) return setSt({ status: "invalid" });
+        setSt({ status: "checking" });
+        let alive = true;
+        const t = setTimeout(() => {
+            const img = new Image();
+            const timeout = setTimeout(() => alive && setSt({ status: "error", message: "The image took too long to load." }), 10000);
+            img.onload = () => {
+                clearTimeout(timeout);
+                if (alive) setSt(img.naturalWidth > 0 ? { status: "ok" } : { status: "error", message: "That link isn't an image." });
+            };
+            img.onerror = () => {
+                clearTimeout(timeout);
+                if (alive) setSt({ status: "error", message: "Couldn't load this image — it may not exist (404) or isn't a direct image link." });
+            };
+            img.referrerPolicy = "no-referrer";
+            img.src = url;
+        }, 600);
+        return () => {
+            alive = false;
+            clearTimeout(t);
+        };
+    }, [url, err]);
+    // biome-ignore lint/correctness/useExhaustiveDependencies: report status changes only
+    useEffect(() => onStatus(st.status), [st.status]);
+
+    return (
+        <Stack direction="row" spacing={1.2} alignItems="flex-start">
+            <Box
+                sx={{
+                    width: 96, height: 54, flexShrink: 0, mt: 0.6, borderRadius: "10px", overflow: "hidden",
+                    border: "1px solid var(--app-border)", background: "var(--app-surface-2)", display: "grid", placeItems: "center",
+                    color: "var(--app-fg-faint)", fontSize: "0.7rem", fontWeight: 700,
+                }}
+            >
+                {st.status === "ok" ? (
+                    <Box component="img" src={url} alt="" referrerPolicy="no-referrer" sx={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                    `#${index + 1}`
+                )}
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+                <HttpsField
+                    label={index === 0 ? "Cover image (main)" : `Cover image ${index + 1}`}
+                    value={value}
+                    onChange={onChange}
+                    placeholder="https://…/cover.jpg"
+                    error={err || (st.status === "error" ? st.message : null)}
+                    helper={st.status === "ok" ? "Image found." : index === 0 ? "Also used when the link is shared. 16:9 works best." : undefined}
+                    endAdornment={
+                        st.status === "checking" ? <CircularProgress size={18} /> :
+                        st.status === "ok" ? <CheckCircleIcon sx={{ color: "var(--app-success)" }} /> :
+                        st.status === "error" ? <ErrorOutlineIcon sx={{ color: "var(--app-danger)" }} /> : null
+                    }
+                />
+            </Box>
+            <Stack direction="row" sx={{ mt: 0.6 }}>
+                <IconButton size="small" aria-label="Move up" disabled={index === 0} onClick={() => onMove(-1)}><ArrowUpwardIcon fontSize="small" /></IconButton>
+                <IconButton size="small" aria-label="Move down" disabled={index === count - 1} onClick={() => onMove(1)}><ArrowDownwardIcon fontSize="small" /></IconButton>
+                <IconButton size="small" aria-label="Remove image" onClick={onRemove}><CloseIcon fontSize="small" /></IconButton>
+            </Stack>
+        </Stack>
+    );
+}
+
+/** Cover slideshow: up to 6 images, reorder/remove, autoplay or manual. */
+function CoversEditor({
+    covers,
+    autoplay,
+    onChange,
+    onAutoplay,
+    onStatuses,
+}: {
+    covers: string[];
+    autoplay: boolean;
+    onChange: (v: string[]) => void;
+    onAutoplay: (v: boolean) => void;
+    onStatuses: (s: CoverState["status"][]) => void;
+}) {
+    // Stable keys so fields keep their own check state while reordering.
+    const [keys, setKeys] = useState<number[]>(() => covers.map((_, i) => i));
+    const nextKey = useRef(covers.length);
+    const statuses = useRef<Record<number, CoverState["status"]>>({});
+    const report = () => onStatuses(keys.map((k) => statuses.current[k] ?? "empty"));
+
+    const update = (list: string[], k: number[]) => {
+        setKeys(k);
+        onChange(list);
+    };
+    return (
+        <Box>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: "0.92rem" }}>Cover images</Typography>
+                <Typography sx={{ color: "var(--app-fg-muted)", fontSize: "0.78rem" }}>{covers.length}/{MAX_COVERS}</Typography>
+            </Stack>
+            <Stack spacing={1.4}>
+                {covers.map((c, i) => (
+                    <CoverField
+                        key={keys[i]}
+                        index={i}
+                        count={covers.length}
+                        value={c}
+                        onChange={(v) => onChange(covers.map((x, j) => (j === i ? v : x)))}
+                        onStatus={(st) => {
+                            statuses.current[keys[i]] = st;
+                            report();
+                        }}
+                        onRemove={() => {
+                            delete statuses.current[keys[i]];
+                            update(covers.filter((_, j) => j !== i), keys.filter((_, j) => j !== i));
+                            setTimeout(report, 0);
+                        }}
+                        onMove={(dir) => {
+                            const j = i + dir;
+                            const list = [...covers];
+                            const k = [...keys];
+                            [list[i], list[j]] = [list[j], list[i]];
+                            [k[i], k[j]] = [k[j], k[i]];
+                            update(list, k);
+                        }}
+                    />
+                ))}
+            </Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ sm: "center" }} justifyContent="space-between" sx={{ mt: 1.2 }}>
+                <Button
+                    onClick={() => update([...covers, ""], [...keys, nextKey.current++])}
+                    disabled={covers.length >= MAX_COVERS}
+                    sx={{ textTransform: "none", fontWeight: 700, borderRadius: "999px", px: 2, color: "var(--app-fg)", border: "1px dashed var(--app-border)", alignSelf: "flex-start" }}
+                >
+                    + Add {covers.length ? "another image" : "a cover image"}
+                </Button>
+                {covers.length > 1 && (
+                    <FormControlLabel
+                        control={<Switch checked={autoplay} onChange={(e) => onAutoplay(e.target.checked)} />}
+                        label={<Typography sx={{ fontSize: "0.86rem" }}>{autoplay ? "Slides advance automatically" : "Visitors move through slides themselves"}</Typography>}
+                    />
+                )}
+            </Stack>
+        </Box>
+    );
+}
+
 export default function FundraiserEditor({
     initial,
     submitLabel,
@@ -318,38 +495,8 @@ export default function FundraiserEditor({
 
     // ── Links ──
     const linkError = urlError(d.link_url, "GitHub or website");
-    const coverUrlError = urlError(d.cover_url, "Cover image");
-
-    // ── Cover image: actually load it (debounced) to catch 404s / non-images ──
-    const [cover, setCover] = useState<CoverState>({ status: "empty" });
-    const coverUrl = cleanUrl(d.cover_url);
-    useEffect(() => {
-        if (!coverUrl) return setCover({ status: "empty" });
-        if (coverUrlError) return setCover({ status: "invalid" });
-        setCover({ status: "checking" });
-        let alive = true;
-        const t = setTimeout(() => {
-            const img = new Image();
-            const timeout = setTimeout(() => {
-                if (alive) setCover({ status: "error", message: "The image took too long to load." });
-            }, 10000);
-            img.onload = () => {
-                clearTimeout(timeout);
-                if (!alive) return;
-                setCover(img.naturalWidth > 0 ? { status: "ok" } : { status: "error", message: "That link isn't an image." });
-            };
-            img.onerror = () => {
-                clearTimeout(timeout);
-                if (alive) setCover({ status: "error", message: "Couldn't load this image — it may not exist (404) or isn't a direct image link." });
-            };
-            img.referrerPolicy = "no-referrer";
-            img.src = coverUrl;
-        }, 600);
-        return () => {
-            alive = false;
-            clearTimeout(t);
-        };
-    }, [coverUrl, coverUrlError]);
+    const [coverStatuses, setCoverStatuses] = useState<CoverState["status"][]>([]);
+    const coverInvalid = d.covers.some((c) => urlError(c, "Cover image"));
 
     const blockers = useMemo(() => {
         const b: string[] = [];
@@ -359,11 +506,12 @@ export default function FundraiserEditor({
         if (!d.presets_inr.length) b.push("Add at least one ₹ preset.");
         if (!d.presets_usd.length) b.push("Add at least one $ preset.");
         if (linkError) b.push(linkError);
-        if (coverUrlError) b.push(coverUrlError);
-        if (cover.status === "checking") b.push("Checking the cover image…");
-        if (cover.status === "error") b.push("Fix the cover image link, or clear it.");
+        if ((d.display_name || "").length > 80) b.push("Display name can be at most 80 characters.");
+        if (coverInvalid) b.push("Every cover image must be a public https:// link.");
+        if (coverStatuses.includes("checking")) b.push("Checking the cover images…");
+        if (coverStatuses.includes("error")) b.push("Fix or remove the cover image that didn't load.");
         return b;
-    }, [d, goalError, linkError, coverUrlError, cover.status]);
+    }, [d, goalError, linkError, coverInvalid, coverStatuses]);
 
     return (
         <Stack spacing={2.2}>
@@ -379,6 +527,16 @@ export default function FundraiserEditor({
                 placeholder="oreo-badge"
                 InputProps={{ startAdornment: <Box component="span" sx={{ color: "var(--app-fg-muted)", mr: 0.5, whiteSpace: "nowrap" }}>payouts.elixpo.com/f/</Box> }}
                 helperText={slugLocked ? "The link can't change after publishing — it may already be on printed QR codes." : "Leave empty to use the title. Lowercase letters, numbers and hyphens."}
+            />
+            <TextField
+                label="Display name (optional)"
+                value={d.display_name}
+                onChange={set("display_name")}
+                fullWidth
+                sx={field}
+                inputProps={{ maxLength: 80 }}
+                placeholder="e.g. Ayushman Bhattacharya, or Oreo Badge Project"
+                helperText="Shown on the page and in receipts instead of your account name — use your legal or project name."
             />
             <TextField
                 label="Why you're raising money"
@@ -418,30 +576,13 @@ export default function FundraiserEditor({
                 </Stack>
             </Box>
 
-            <Box>
-                <HttpsField
-                    label="Cover image URL (optional)"
-                    value={d.cover_url}
-                    onChange={(v) => patch({ cover_url: v })}
-                    placeholder="https://…/cover.jpg"
-                    error={coverUrlError || (cover.status === "error" ? cover.message : null)}
-                    helper={cover.status === "ok" ? "Image found." : "A direct link to a .jpg, .png or .webp. 16:9 works best."}
-                    endAdornment={
-                        cover.status === "checking" ? <CircularProgress size={18} /> :
-                        cover.status === "ok" ? <CheckCircleIcon sx={{ color: "var(--app-success)" }} /> :
-                        cover.status === "error" ? <ErrorOutlineIcon sx={{ color: "var(--app-danger)" }} /> : null
-                    }
-                />
-                {cover.status === "ok" && (
-                    <Box
-                        component="img"
-                        src={coverUrl}
-                        alt="Cover preview"
-                        referrerPolicy="no-referrer"
-                        sx={{ mt: 1.2, width: "100%", maxWidth: 360, aspectRatio: "16 / 9", objectFit: "cover", borderRadius: "12px", border: "1px solid var(--app-border)", display: "block" }}
-                    />
-                )}
-            </Box>
+            <CoversEditor
+                covers={d.covers}
+                autoplay={d.cover_autoplay}
+                onChange={(covers) => patch({ covers })}
+                onAutoplay={(cover_autoplay) => patch({ cover_autoplay })}
+                onStatuses={setCoverStatuses}
+            />
             <HttpsField
                 label="GitHub or website (optional)"
                 value={d.link_url}

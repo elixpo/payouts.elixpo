@@ -52,6 +52,66 @@ export default function FundraisersDocs() {
                 and included in the CSV export.
             </DocP>
 
+            <Box id="money-flow" sx={{ scrollMarginTop: "110px" }}>
+                <DocH2>How the money reaches the creator</DocH2>
+            </Box>
+            <Box
+                component="ol"
+                sx={{
+                    listStyle: "none",
+                    p: 0,
+                    m: "0 0 1.5rem",
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", sm: "repeat(4, minmax(0, 1fr))" },
+                    gap: 1.2,
+                    counterReset: "step",
+                    "& li": {
+                        position: "relative",
+                        p: 1.6,
+                        borderRadius: "16px",
+                        border: "1px solid var(--app-border)",
+                        background: "var(--app-surface)",
+                        counterIncrement: "step",
+                    },
+                    "& li::before": {
+                        content: "counter(step)",
+                        display: "grid",
+                        placeItems: "center",
+                        width: 26,
+                        height: 26,
+                        mb: 1,
+                        borderRadius: "50%",
+                        background: "var(--app-ink)",
+                        color: "var(--app-on-ink)",
+                        fontWeight: 700,
+                        fontSize: "0.8rem",
+                    },
+                    "& li:last-child::before": { background: "var(--app-success)" },
+                    "& b": { display: "block", mb: 0.4 },
+                    "& span": { color: "var(--app-fg-muted)", fontSize: "0.86rem", lineHeight: 1.5 },
+                }}
+            >
+                <li>
+                    <b>You pay →</b>
+                    <span>UPI, card or netbanking on Razorpay's secure checkout. Elixpo never sees card details.</span>
+                </li>
+                <li>
+                    <b>Razorpay →</b>
+                    <span>An RBI-licensed payment gateway confirms the payment.</span>
+                </li>
+                <li>
+                    <b>Elixpo Pay →</b>
+                    <span>Records it once, updates the total and emails your receipt.</span>
+                </li>
+                <li>
+                    <b>The creator's bank</b>
+                    <span>
+                        Paid out through Razorpay Route to the creator's bank account, verified by Razorpay KYC (Elixpo's
+                        own fundraisers settle to the platform account). A 2% platform fee applies to third-party payouts.
+                    </span>
+                </li>
+            </Box>
+
             <DocH2>Managing it</DocH2>
             <DocList
                 items={[

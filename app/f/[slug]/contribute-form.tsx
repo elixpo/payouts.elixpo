@@ -25,6 +25,25 @@ function loadRazorpay(): Promise<boolean> {
     });
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[a-z]{2,}$/i;
+// Common domain typos → suggestion ("did you mean …?").
+const DOMAIN_FIXES: Record<string, string> = {
+    "gmial.com": "gmail.com", "gmai.com": "gmail.com", "gmal.com": "gmail.com", "gamil.com": "gmail.com",
+    "gnail.com": "gmail.com", "gmail.co": "gmail.com", "gmail.con": "gmail.com", "gmail.cm": "gmail.com",
+    "yaho.com": "yahoo.com", "yahooo.com": "yahoo.com", "yahoo.co": "yahoo.com",
+    "hotmial.com": "hotmail.com", "hotmai.com": "hotmail.com", "outlok.com": "outlook.com", "outllook.com": "outlook.com",
+    "iclod.com": "icloud.com", "icloud.co": "icloud.com",
+};
+
+function emailProblem(raw: string): { error?: string; suggest?: string } {
+    const v = raw.trim();
+    if (!v) return { error: "Enter your email so we can send your receipt." };
+    if (!EMAIL_RE.test(v)) return { error: "That doesn't look like a complete email address (name@example.com)." };
+    const [user, domain] = v.split("@");
+    const fix = DOMAIN_FIXES[domain.toLowerCase()];
+    return fix ? { suggest: `${user}@${fix}` } : {};
+}
+
 export default function ContributeForm({
     slug,
     title,
@@ -35,6 +54,8 @@ export default function ContributeForm({
     initialCurrency,
     open,
     closedReason,
+    mostChosen = {},
+    ownerName,
 }: {
     slug: string;
     title: string;
@@ -45,9 +66,18 @@ export default function ContributeForm({
     initialCurrency: Cur;
     open: boolean;
     closedReason: string;
+    /** The preset most supporters actually chose (per currency), if any. */
+    mostChosen?: Partial<Record<Cur, number>>;
+    ownerName: string;
 }) {
+    const startPick = (c: Cur) => {
+        const pop = mostChosen[c];
+        return pop !== undefined && presets[c].includes(pop) ? pop : (presets[c][1] ?? presets[c][0] ?? null);
+    };
     const [cur, setCur] = useState<Cur>(initialCurrency);
-    const [picked, setPicked] = useState<number | null>(presets[initialCurrency][1] ?? presets[initialCurrency][0] ?? null);
+    const [picked, setPicked] = useState<number | null>(startPick(initialCurrency));
+    const [emailTouched, setEmailTouched] = useState(false);
+    const [showFlow, setShowFlow] = useState(false);
     const [custom, setCustom] = useState("");
     const [name, setName] = useState("");
     const [showName, setShowName] = useState(true);
@@ -67,6 +97,10 @@ export default function ContributeForm({
     const lim = limits[cur];
     const validAmount = Number.isInteger(amount) && amount >= lim.min && amount <= lim.max;
     const inrCharge = cur === "USD" && validAmount ? Math.round((amount / 100) * rate) * 100 : null;
+    const belowMin = Number.isFinite(amount) && amount > 0 && amount < lim.min;
+    const aboveMax = Number.isFinite(amount) && amount > lim.max;
+    const emailCheck = emailProblem(email);
+    const emailOk = !emailCheck.error;
 
     if (!open) {
         return (
@@ -80,7 +114,7 @@ export default function ContributeForm({
     const switchCurrency = (c: Cur) => {
         setCur(c);
         setCustom("");
-        setPicked(presets[c][1] ?? presets[c][0] ?? null);
+        setPicked(startPick(c));
         setError(null);
     };
 
@@ -94,8 +128,9 @@ export default function ContributeForm({
             setError(`Choose an amount between ${fmt(lim.min, cur)} and ${fmt(lim.max, cur)}.`);
             return;
         }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-            setError("Enter your email so we can send your receipt.");
+        if (!emailOk) {
+            setEmailTouched(true);
+            setError(emailCheck.error ?? "Enter a valid email.");
             return;
         }
         setBusy(true);
@@ -195,6 +230,7 @@ export default function ContributeForm({
                         }}
                     >
                         {fmt(p, cur)}
+                        {mostChosen[cur] === p && <span className="fr-tag">Most chosen</span>}
                     </button>
                 ))}
             </fieldset>
@@ -210,8 +246,17 @@ export default function ContributeForm({
                         placeholder={(lim.min / 100).toString()}
                         value={custom}
                         onChange={(e) => setCustom(e.target.value.replace(/[^\d.,]/g, ""))}
+                        aria-invalid={belowMin || aboveMax}
+                        aria-describedby="fr-amount-hint"
                     />
                 </div>
+                <p id="fr-amount-hint" className={`fr-hint${belowMin || aboveMax ? " bad" : ""}`}>
+                    {belowMin
+                        ? `The minimum is ${fmt(lim.min, cur)}.`
+                        : aboveMax
+                          ? `The maximum is ${fmt(lim.max, cur)} per contribution.`
+                          : `Minimum ${fmt(lim.min, cur)}.`}
+                </p>
             </div>
 
             <div className="fr-field">
@@ -223,8 +268,26 @@ export default function ContributeForm({
                     inputMode="email"
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => setEmail(e.target.value.replace(/\s/g, ""))}
+                    onBlur={() => setEmailTouched(true)}
+                    aria-invalid={emailTouched && !emailOk}
+                    aria-describedby="fr-email-hint"
+                    placeholder="you@example.com"
                 />
+                {emailTouched && emailCheck.error && (
+                    <p id="fr-email-hint" className="fr-hint bad">
+                        {emailCheck.error}
+                    </p>
+                )}
+                {emailCheck.suggest && (
+                    <p id="fr-email-hint" className="fr-hint">
+                        Did you mean{" "}
+                        <button type="button" className="fr-linkbtn" onClick={() => setEmail(emailCheck.suggest ?? email)}>
+                            {emailCheck.suggest}
+                        </button>
+                        ?
+                    </p>
+                )}
             </div>
             <div className="fr-field">
                 <label htmlFor="fr-name">Your name (optional)</label>
@@ -239,7 +302,7 @@ export default function ContributeForm({
                 <textarea id="fr-msg" maxLength={280} value={message} onChange={(e) => setMessage(e.target.value)} />
             </div>
 
-            <button type="button" className="fr-pay" onClick={pay} disabled={busy}>
+            <button type="button" className="fr-pay" onClick={pay} disabled={busy || !validAmount || (emailTouched && !emailOk)}>
                 {busy ? "Opening payment…" : validAmount ? `Pay ${fmt(amount, cur)}` : "Pay"}
             </button>
             {error && (
@@ -255,6 +318,34 @@ export default function ContributeForm({
                     : ""}
                 UPI, cards and netbanking via Razorpay. Your email is only used for the receipt.
             </p>
+            <button type="button" className="fr-flow-toggle" aria-expanded={showFlow} onClick={() => setShowFlow((v) => !v)}>
+                🔒 How your money gets to {ownerName} {showFlow ? "▴" : "▾"}
+            </button>
+            {showFlow && (
+                <div className="fr-flow">
+                    <ol>
+                        <li>
+                            <b>You pay</b>
+                            <span>UPI, card or netbanking on Razorpay's secure checkout — we never see card details.</span>
+                        </li>
+                        <li>
+                            <b>Razorpay</b>
+                            <span>An RBI-licensed payment gateway confirms the payment.</span>
+                        </li>
+                        <li>
+                            <b>Elixpo Pay</b>
+                            <span>Records it, updates the total and emails your receipt.</span>
+                        </li>
+                        <li>
+                            <b>{ownerName}</b>
+                            <span>Paid to their bank account, verified through Razorpay KYC.</span>
+                        </li>
+                    </ol>
+                    <a href="/docs/fundraisers#money-flow" target="_blank" rel="noopener noreferrer">
+                        Read how fundraisers work ↗
+                    </a>
+                </div>
+            )}
         </>
     );
 }

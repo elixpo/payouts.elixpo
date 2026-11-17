@@ -26,6 +26,9 @@ export interface FundraiserRow {
     title: string;
     body_md: string;
     cover_url: string | null;
+    cover_urls_json: string | null;
+    cover_autoplay: number;
+    display_name: string | null;
     link_url: string | null;
     goal_amount: number;
     goal_currency: string;
@@ -212,6 +215,46 @@ export function parsePresets(json: string | null): Record<DisplayCurrency, numbe
     }
 }
 
+export const MAX_COVERS = 6;
+
+/** Stored cover list (falls back to the single legacy cover_url). */
+export function coverList(row: Pick<FundraiserRow, "cover_url" | "cover_urls_json">): string[] {
+    try {
+        const arr = JSON.parse(row.cover_urls_json || "null");
+        if (Array.isArray(arr)) return arr.filter((u) => typeof u === "string" && publicHttpsUrl(u)).slice(0, MAX_COVERS);
+    } catch {
+        /* fall through */
+    }
+    return row.cover_url ? [row.cover_url] : [];
+}
+
+/** The name shown publicly: the fundraiser's display name, else the account name. */
+export function publicName(row: Pick<FundraiserRow, "display_name" | "owner_name">, fallback = "Elixpo creator"): string {
+    return (row.display_name || "").trim() || (row.owner_name || "").trim() || fallback;
+}
+
+/**
+ * The preset most supporters actually chose (by display currency), so the
+ * page can honestly tag it "Most chosen". Needs at least 2 matching gifts.
+ */
+export async function mostChosen(db: D1Database, fundraiserId: string): Promise<Partial<Record<DisplayCurrency, number>>> {
+    const res = await db
+        .prepare(
+            `SELECT display_currency AS cur, display_amount AS amt, COUNT(*) AS n
+             FROM contributions WHERE fundraiser_id = ? AND status = 'paid' AND display_amount IS NOT NULL
+             GROUP BY display_currency, display_amount HAVING COUNT(*) >= 2
+             ORDER BY n DESC, amt DESC`,
+        )
+        .bind(fundraiserId)
+        .all();
+    const out: Partial<Record<DisplayCurrency, number>> = {};
+    for (const r of (res.results ?? []) as any[]) {
+        const cur = r.cur === "USD" ? "USD" : "INR";
+        if (out[cur] === undefined) out[cur] = Number(r.amt);
+    }
+    return out;
+}
+
 /** Live ₹ per $1 used to convert USD contributions into the INR charge. */
 export async function usdInrRate(): Promise<number> {
     return (await getUsdInrRate()).rate;
@@ -298,19 +341,23 @@ export async function recentSupporters(db: D1Database, fundraiserId: string, lim
 
 /** What the public page / API may see — never owner ids or contributor emails. */
 export async function publicView(db: D1Database, row: FundraiserRow) {
-    const [totals, supporters, readiness, fx] = await Promise.all([
+    const [totals, supporters, readiness, fx, popular] = await Promise.all([
         getTotals(db, row.id),
         recentSupporters(db, row.id),
         payoutReadiness(db, row.merchant_id),
         getUsdInrRate(),
+        mostChosen(db, row.id),
     ]);
     return {
         slug: row.slug,
         title: row.title,
         body_md: row.body_md,
         cover_url: row.cover_url,
+        covers: coverList(row),
+        cover_autoplay: row.cover_autoplay !== 0,
         link_url: row.link_url,
-        owner: { name: row.owner_name || "Elixpo creator", avatar: row.owner_avatar, verified: readiness.verified },
+        owner: { name: publicName(row), avatar: row.owner_avatar, verified: readiness.verified },
+        most_chosen: popular,
         goal: { amount: row.goal_amount, currency: row.goal_currency },
         raised: totals.raised,
         contributors: totals.count,
@@ -393,14 +440,14 @@ async function notifyContribution(db: D1Database, contributionId: string): Promi
             amount: shownAs,
             fundraiser_title: f.title,
             fundraiser_url: pageUrl,
-            owner_name: f.owner_name || owner?.name || "the creator",
+            owner_name: publicName(f, owner?.name || "the creator"),
             thank_you_message: f.thank_you_message || "",
             message: c.message || "",
             payment_id: c.provider_payment_id || "",
             paid_at: formatDate(new Date().toISOString()),
             receipt_note: "Contributions are not tax-deductible.",
             // Optional sections — empty when there's nothing to show.
-            thank_you_html: quoteBlockHtml(f.thank_you_message, `A note from ${f.owner_name || owner?.name || "the creator"}`),
+            thank_you_html: quoteBlockHtml(f.thank_you_message, `A note from ${publicName(f, owner?.name || "the creator")}`),
             message_html: quoteBlockHtml(c.message, "Your message"),
         },
         `fundraiser.thank_you:${c.id}`,
@@ -410,7 +457,7 @@ async function notifyContribution(db: D1Database, contributionId: string): Promi
         "fundraiser.new_contribution",
         owner?.email,
         {
-            owner_name: f.owner_name || owner?.name || "there",
+            owner_name: publicName(f, owner?.name || "there"),
             contributor_name: contributor,
             amount: shownAs,
             message: c.message || "",
@@ -436,6 +483,9 @@ export interface FundraiserInput {
     slug?: string;
     body_md?: string;
     cover_url?: string | null;
+    cover_urls_json?: string | null;
+    cover_autoplay?: number;
+    display_name?: string | null;
     link_url?: string | null;
     goal_amount?: number;
     presets_json?: string;
@@ -487,6 +537,33 @@ export function parseFundraiserInput(
             }
         }
     }
+    // Multiple covers: an array of public https image links (≤ 6). The first
+    // also becomes cover_url (social previews, older readers).
+    if (has("cover_urls")) {
+        const raw = body?.cover_urls;
+        if (!Array.isArray(raw)) return { ok: false, error: "Cover images must be a list of links." };
+        const list: string[] = [];
+        for (const v of raw) {
+            const t = typeof v === "string" ? v.trim() : "";
+            if (!t || t === "https://") continue;
+            const u = publicHttpsUrl(t);
+            if (!u) return { ok: false, error: "Every cover image must be a public https:// link." };
+            if (!list.includes(u)) list.push(u);
+        }
+        if (list.length > MAX_COVERS) return { ok: false, error: `Use at most ${MAX_COVERS} cover images.` };
+        f.cover_urls_json = list.length ? JSON.stringify(list) : null;
+        f.cover_url = list[0] ?? null;
+    }
+    if (has("cover_autoplay")) f.cover_autoplay = body?.cover_autoplay === false ? 0 : 1;
+    if (!partial || has("display_name")) {
+        const n = String(body?.display_name ?? "")
+            // biome-ignore lint/suspicious/noControlCharactersInRegex: strip control chars
+            .replace(/[\u0000-\u001f\u007f]/g, "")
+            .replace(/\s+/g, " ")
+            .trim();
+        if (n.length > 80) return { ok: false, error: "Display name can be at most 80 characters." };
+        f.display_name = n || null;
+    }
     if (!partial || has("goal_amount")) {
         const g = Math.round(Number(body?.goal_amount));
         if (!Number.isInteger(g) || g < 10_000 || g > 1_000_000_000) {
@@ -527,6 +604,10 @@ export async function ownerView(db: D1Database, row: FundraiserRow) {
         title: row.title,
         body_md: row.body_md,
         cover_url: row.cover_url,
+        covers: coverList(row),
+        cover_autoplay: row.cover_autoplay !== 0,
+        display_name: row.display_name,
+        public_name: publicName(row),
         link_url: row.link_url,
         goal_amount: row.goal_amount,
         goal_currency: row.goal_currency,

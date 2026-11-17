@@ -12,6 +12,8 @@ import { formatMoney } from "@/lib/mail-notify";
 import { renderMarkdown } from "@/lib/markdown";
 import { SESSION_COOKIE, verifySession } from "@/lib/session";
 import AnimatedProgress from "./animated-progress";
+import CoverCarousel from "./cover-carousel";
+import StickyContribute from "./sticky-contribute";
 import ContributeForm from "./contribute-form";
 import ReportLink from "./report-link";
 import "../fundraiser.css";
@@ -115,6 +117,18 @@ export default async function FundraiserPage({ params }: Params) {
 
     return (
         <PageShell>
+            <div className="fr-bg" aria-hidden>
+                <span className="b1">♥</span>
+                <span className="b2">₹</span>
+                <span className="b3">✦</span>
+                <span className="b4">♥</span>
+                <span className="b5">✦</span>
+                <span className="b6">₹</span>
+                <span className="b7">♥</span>
+                <i className="o1" />
+                <i className="o2" />
+                <i className="o3" />
+            </div>
             <div className="fr-page">
                 {preview && (
                     <div className="fr-banner" role="status">
@@ -162,7 +176,7 @@ export default async function FundraiserPage({ params }: Params) {
                         />
                     </section>
 
-                    <aside className="fr-col-form" aria-label="Contribute">
+                    <aside className="fr-col-form" aria-label="Contribute" id="contribute">
                         <div className="fr-card">
                             <ContributeForm
                                 slug={view.slug}
@@ -171,6 +185,8 @@ export default async function FundraiserPage({ params }: Params) {
                                 limits={view.limits}
                                 rate={view.usd_inr_rate}
                                 rateAsOf={view.usd_inr_as_of}
+                                mostChosen={view.most_chosen}
+                                ownerName={view.owner.name}
                                 initialCurrency={currency}
                                 open={view.accepts_payments && !preview}
                                 closedReason={
@@ -185,9 +201,8 @@ export default async function FundraiserPage({ params }: Params) {
                     </aside>
 
                     <section className="fr-story">
-                        {view.cover_url ? (
-                            // biome-ignore lint/performance/noImgElement: creator-supplied remote image
-                            <img className="fr-cover" src={view.cover_url} alt="" />
+                        {view.covers.length ? (
+                            <CoverCarousel images={view.covers} autoplay={view.cover_autoplay} title={view.title} />
                         ) : (
                             <div className="fr-cover-geo geo" aria-hidden>
                                 <i className="g-ring" />
@@ -242,6 +257,9 @@ export default async function FundraiserPage({ params }: Params) {
                     </section>
                 </div>
             </div>
+            {view.accepts_payments && !preview && (
+                <StickyContribute label={`Contribute to ${view.owner.name.split(" ")[0]} →`} />
+            )}
         </PageShell>
     );
 }
