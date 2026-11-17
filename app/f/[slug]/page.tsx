@@ -118,16 +118,26 @@ export default async function FundraiserPage({ params }: Params) {
     return (
         <PageShell>
             <div className="fr-bg" aria-hidden>
-                <span className="b1">♥</span>
-                <span className="b2">₹</span>
-                <span className="b3">✦</span>
-                <span className="b4">♥</span>
-                <span className="b5">✦</span>
-                <span className="b6">₹</span>
-                <span className="b7">♥</span>
+                <BgHeart className="b1" />
+                <BgCoin className="b2" />
+                <BgSpark className="b3" />
+                <BgHeart className="b4" />
+                <BgSpark className="b5" />
+                <BgCoin className="b6" />
+                <BgHeart className="b7" />
+                {/* Hearts rising slowly from the bottom, like released balloons. */}
+                <BgHeart className="r r1" />
+                <BgHeart className="r r2" />
+                <BgHeart className="r r3" />
+                <BgHeart className="r r4" />
+                <BgHeart className="r r5" />
+                <BgHeart className="r r6" />
                 <i className="o1" />
                 <i className="o2" />
                 <i className="o3" />
+                <i className="glow g1" />
+                <i className="glow g2" />
+                <i className="glow g3" />
             </div>
             <div className="fr-page">
                 {preview && (
@@ -158,7 +168,7 @@ export default async function FundraiserPage({ params }: Params) {
                                     {view.owner.name}
                                     {view.owner.verified && (
                                         <span className="fr-verified" title="Identity verified through Razorpay KYC">
-                                            ✓ Verified
+                                            <Check /> Verified
                                         </span>
                                     )}
                                 </b>
@@ -177,6 +187,7 @@ export default async function FundraiserPage({ params }: Params) {
                     </section>
 
                     <aside className="fr-col-form" aria-label="Contribute" id="contribute">
+                        <div className="fr-card-sticky">
                         <div className="fr-card">
                             <ContributeForm
                                 slug={view.slug}
@@ -197,6 +208,7 @@ export default async function FundraiserPage({ params }: Params) {
                                           : "This fundraiser isn't accepting contributions right now."
                                 }
                             />
+                        </div>
                         </div>
                     </aside>
 
@@ -311,10 +323,10 @@ export default async function FundraiserPage({ params }: Params) {
                         </li>
                     </ol>
                     <div className="fr-badges">
-                        <span><i>✓</i> RBI-licensed gateway</span>
-                        {view.owner.verified && <span><i>✓</i> KYC-verified recipient</span>}
-                        <span><i>✓</i> Receipt for every payment</span>
-                        <span><i>✓</i> Counted exactly once</span>
+                        <span><Check /> RBI-licensed gateway</span>
+                        {view.owner.verified && <span><Check /> KYC-verified recipient</span>}
+                        <span><Check /> Receipt for every payment</span>
+                        <span><Check /> Counted exactly once</span>
                         <Link href="/refunds">Refund policy →</Link>
                         <Link href="/docs/fundraisers#money-flow">How fundraisers work →</Link>
                     </div>
@@ -329,5 +341,38 @@ export default async function FundraiserPage({ params }: Params) {
                 <StickyContribute label={`Contribute to ${view.owner.name.split(" ")[0]} →`} />
             )}
         </PageShell>
+    );
+}
+
+const HEART = "M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.2 5.3 3.1 1.7-1.9 3.2-3.1 5.3-3.1 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z";
+
+/** Inline check mark (SVG, never an emoji). */
+function Check() {
+    return (
+        <svg className="fr-check-ico" viewBox="0 0 24 24" width="12" height="12" aria-hidden>
+            <path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    );
+}
+function BgHeart({ className }: { className: string }) {
+    return (
+        <svg className={className} viewBox="0 0 24 24">
+            <path d={HEART} fill="currentColor" />
+        </svg>
+    );
+}
+function BgSpark({ className }: { className: string }) {
+    return (
+        <svg className={className} viewBox="0 0 24 24">
+            <path d="M12 2l2.1 7.2L21 12l-6.9 2.8L12 22l-2.1-7.2L3 12l6.9-2.8z" fill="currentColor" />
+        </svg>
+    );
+}
+function BgCoin({ className }: { className: string }) {
+    return (
+        <svg className={className} viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+            <path d="M8.5 8h7M8.5 11h7M9 8c4 0 4 6 0 6l5.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
     );
 }

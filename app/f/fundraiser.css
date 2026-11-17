@@ -248,7 +248,7 @@ fieldset.fr-presets { padding: 0; border: 0; }
 /* ── Warm background: drifting hearts, coins and sparkles (decorative) ── */
 .fr-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 .fr-bg + .fr-page { position: relative; z-index: 1; }
-.fr-bg span { position: absolute; font-size: 1.4rem; opacity: 0.16; animation: fr-drift 22s ease-in-out infinite; }
+.fr-bg svg { position: absolute; width: 22px; height: 22px; opacity: 0.18; animation: fr-drift 22s ease-in-out infinite; }
 .fr-bg .b1 { left: 4%; top: 22%; color: var(--app-orange); }
 .fr-bg .b2 { left: 9%; top: 68%; color: var(--app-yellow); font-weight: 700; animation-delay: -6s; }
 .fr-bg .b3 { left: 47%; top: 12%; color: var(--app-accent); animation-delay: -3s; }
@@ -261,8 +261,8 @@ fieldset.fr-presets { padding: 0; border: 0; }
 .fr-bg .o2 { width: 260px; height: 260px; left: -120px; top: 55%; }
 .fr-bg .o3 { width: 120px; height: 120px; left: 38%; bottom: -40px; background: color-mix(in srgb, var(--app-yellow) 14%, transparent); border: 0; }
 @keyframes fr-drift { 0%, 100% { transform: translate(0, 0) rotate(0); } 33% { transform: translate(14px, -22px) rotate(8deg); } 66% { transform: translate(-10px, -8px) rotate(-6deg); } }
-@media (max-width: 760px) { .fr-bg span { opacity: 0.1; } .fr-bg .o1 { width: 260px; height: 260px; } }
-@media (prefers-reduced-motion: reduce) { .fr-bg span { animation: none; } }
+@media (max-width: 760px) { .fr-bg svg { opacity: 0.1; } .fr-bg .o1 { width: 260px; height: 260px; } }
+@media (prefers-reduced-motion: reduce) { .fr-bg svg { animation: none; } }
 
 /* ── Compact contribute card: the whole decision fits in the first screen ── */
 .fr-card { padding: 1.15rem 1.25rem 1rem; top: 96px; max-height: calc(100svh - 112px); overflow-y: auto; scrollbar-width: thin; }
@@ -331,3 +331,102 @@ fieldset.fr-presets { padding: 0; border: 0; }
   .fr-route-steps li:not(:last-child)::before { display: none; }
 }
 .fr-route-steps li > div { display: flex; flex-direction: column; align-items: inherit; }
+
+/* ── Fix: keep the ₹/$ prefix clear of the "Other amount" text ── */
+.fr-card .fr-amount input { padding-left: 2.1rem; }
+.fr-card .fr-amount span { left: 0.9rem; }
+.fr-check-ico { vertical-align: -1px; }
+
+/* ── Contribute card centred in the viewport (desktop) ──
+   A sticky, viewport-tall wrapper centres the card; opening the optional
+   details grows it evenly up and down instead of pushing Pay off-screen. */
+@media (min-width: 901px) {
+  .fr-card-sticky { position: sticky; top: 84px; height: calc(100svh - 84px); display: flex; align-items: center; }
+  .fr-card-sticky .fr-card { position: static; width: 100%; max-height: calc(100svh - 112px); overflow-y: auto; }
+}
+@media (max-width: 900px) { .fr-card-sticky { position: static; } }
+
+/* ── Pink "Pay" with hearts ── */
+.fr-pay-wrap { position: relative; }
+.fr-card .fr-pay.fr-pay-love {
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 0.55rem; overflow: hidden;
+  background: linear-gradient(135deg, #f0508a 0%, #d6336c 55%, #b5245a 100%);
+  color: #fff; box-shadow: 0 10px 26px rgba(214, 51, 108, 0.32);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+.fr-card .fr-pay.fr-pay-love:hover:not(:disabled) { filter: brightness(1.06); box-shadow: 0 14px 34px rgba(214, 51, 108, 0.42); transform: translateY(-1px); }
+.fr-card .fr-pay.fr-pay-love:active:not(:disabled) { transform: translateY(0) scale(0.985); }
+.fr-card .fr-pay.fr-pay-love:disabled { background: linear-gradient(135deg, #f3a6c2, #e58aaa); box-shadow: none; opacity: 0.75; }
+.fr-pay-love:focus-visible { outline: 3px solid #f0508a; outline-offset: 3px; }
+.fr-pay-heart { width: 18px; height: 18px; fill: currentColor; flex-shrink: 0; }
+.fr-pay-love:hover:not(:disabled) .fr-pay-heart { animation: fr-beat 0.9s ease-in-out infinite; }
+/* Hearts drifting up inside the button on hover. */
+.fr-float {
+  position: absolute; bottom: -14px; width: 12px; height: 12px; opacity: 0; pointer-events: none;
+  background: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.2 5.3 3.1 1.7-1.9 3.2-3.1 5.3-3.1 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z'/%3E%3C/svg%3E");
+}
+.fr-float.f1 { left: 18%; } .fr-float.f2 { left: 72%; width: 9px; height: 9px; } .fr-float.f3 { left: 88%; width: 11px; height: 11px; }
+.fr-pay-love:hover:not(:disabled) .fr-float { animation: fr-rise 1.6s ease-out infinite; }
+.fr-pay-love:hover:not(:disabled) .fr-float.f2 { animation-delay: 0.45s; }
+.fr-pay-love:hover:not(:disabled) .fr-float.f3 { animation-delay: 0.9s; }
+/* Click burst: hearts + sparkles flying out of the button. */
+.fr-burst { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; z-index: 2; }
+.fr-particle { position: absolute; left: 0; top: 0; margin: -8px 0 0 -8px; opacity: 0; animation: fr-pop 0.95s cubic-bezier(0.2, 0.7, 0.3, 1) forwards; }
+.fr-particle.heart { fill: #f0508a; }
+.fr-particle.spark { fill: #f5b82e; }
+@keyframes fr-pop {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.3) rotate(0); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1) rotate(var(--rot)); }
+}
+@keyframes fr-rise {
+  0% { opacity: 0; transform: translateY(0) scale(0.6); }
+  25% { opacity: 0.85; }
+  100% { opacity: 0; transform: translateY(-58px) scale(1.05) rotate(14deg); }
+}
+@keyframes fr-beat { 0%, 100% { transform: scale(1); } 30% { transform: scale(1.22); } 60% { transform: scale(0.96); } }
+@media (prefers-reduced-motion: reduce) {
+  .fr-pay-love .fr-float, .fr-pay-love .fr-pay-heart, .fr-particle { animation: none !important; opacity: 0; }
+  .fr-pay-love .fr-pay-heart { opacity: 1; }
+}
+
+/* ── Warmer, "hearty" background ──────────────────────────────────────────
+   Soft blush and peach glows, pinker scattered hearts, and a few hearts that
+   rise slowly from the bottom. All behind content, low contrast, static for
+   reduced-motion visitors and dimmer in dark mode. */
+.fr-bg { background:
+    radial-gradient(60vw 50vh at 8% 12%, rgba(240, 80, 138, 0.07), transparent 70%),
+    radial-gradient(50vw 45vh at 95% 70%, rgba(255, 166, 120, 0.08), transparent 70%); }
+.fr-bg .glow { position: absolute; border: 0; border-radius: 50%; filter: blur(40px); opacity: 1; }
+.fr-bg .g1 { width: 340px; height: 340px; left: -80px; top: 30%; background: rgba(240, 80, 138, 0.1); }
+.fr-bg .g2 { width: 300px; height: 300px; right: 4%; top: 6%; background: rgba(255, 176, 138, 0.12); }
+.fr-bg .g3 { width: 260px; height: 260px; left: 42%; bottom: -60px; background: rgba(240, 80, 138, 0.08); }
+/* Scattered hearts: pink and a little larger. */
+.fr-bg .b1, .fr-bg .b4, .fr-bg .b7 { color: #f0508a; opacity: 0.22; }
+.fr-bg .b1 { width: 30px; height: 30px; }
+.fr-bg .b4 { width: 24px; height: 24px; }
+/* Rising hearts. */
+.fr-bg .r { bottom: -40px; top: auto; color: #f0508a; opacity: 0; animation: fr-heart-rise 18s linear infinite; }
+.fr-bg .r1 { left: 6%; width: 18px; height: 18px; animation-delay: 0s; }
+.fr-bg .r2 { left: 22%; width: 12px; height: 12px; animation-duration: 22s; animation-delay: -6s; color: #ff9a7a; }
+.fr-bg .r3 { left: 51%; width: 22px; height: 22px; animation-duration: 26s; animation-delay: -12s; }
+.fr-bg .r4 { left: 68%; width: 14px; height: 14px; animation-duration: 20s; animation-delay: -3s; color: #ff9a7a; }
+.fr-bg .r5 { left: 84%; width: 20px; height: 20px; animation-duration: 24s; animation-delay: -16s; }
+.fr-bg .r6 { left: 94%; width: 12px; height: 12px; animation-duration: 19s; animation-delay: -9s; color: #ff9a7a; }
+@keyframes fr-heart-rise {
+  0% { transform: translate(0, 0) rotate(-8deg); opacity: 0; }
+  10% { opacity: 0.22; }
+  50% { transform: translate(18px, -55vh) rotate(8deg); }
+  85% { opacity: 0.16; }
+  100% { transform: translate(-10px, -112vh) rotate(-6deg); opacity: 0; }
+}
+html[data-theme="dark"] .fr-bg { background:
+    radial-gradient(60vw 50vh at 8% 12%, rgba(240, 80, 138, 0.06), transparent 70%),
+    radial-gradient(50vw 45vh at 95% 70%, rgba(255, 166, 120, 0.05), transparent 70%); }
+html[data-theme="dark"] .fr-bg .glow { opacity: 0.55; }
+@media (max-width: 760px) { .fr-bg .r3, .fr-bg .r6 { display: none; } .fr-bg .glow { filter: blur(30px); } }
+@media (prefers-reduced-motion: reduce) {
+  .fr-bg .r { animation: none; opacity: 0.16; bottom: auto; }
+  .fr-bg .r1 { top: 76%; } .fr-bg .r2 { top: 40%; } .fr-bg .r3 { top: 58%; }
+  .fr-bg .r4 { top: 18%; } .fr-bg .r5 { top: 48%; } .fr-bg .r6 { top: 86%; }
+}

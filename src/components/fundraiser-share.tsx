@@ -38,7 +38,7 @@ function templates(s: ShareInfo) {
         {
             id: "story",
             name: "Story",
-            text: `Hey! I've started a fundraiser: ${s.title}.\n\nI'm aiming for ${inr(s.goal)}${s.raised ? `, and ${s.contributors} ${s.contributors === 1 ? "person has" : "people have"} already put in ${inr(s.raised)}` : ""}.${ends} If you'd like to help, you can contribute any amount with UPI or a card — no account needed:\n\n${s.url}\n\nSharing it with one friend helps just as much. Thank you 🙏`,
+            text: `Hey! I've started a fundraiser: ${s.title}.\n\nI'm aiming for ${inr(s.goal)}${s.raised ? `, and ${s.contributors} ${s.contributors === 1 ? "person has" : "people have"} already put in ${inr(s.raised)}` : ""}.${ends} If you'd like to help, you can contribute any amount with UPI or a card — no account needed:\n\n${s.url}\n\nSharing it with one friend helps just as much. Thank you!`,
         },
         {
             id: "progress",
