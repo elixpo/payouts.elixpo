@@ -256,6 +256,74 @@ export default async function FundraiserPage({ params }: Params) {
                         </div>
                     </section>
                 </div>
+
+                {/* ── Where the money goes ─────────────────────────────── */}
+                <section className="fr-route" id="money-flow" aria-labelledby="fr-route-h">
+                    <p className="eyebrow">Where your money goes</p>
+                    <h2 id="fr-route-h">
+                        Straight to {view.owner.name}, <em>safely.</em>
+                    </h2>
+                    <p className="fr-route-lead">
+                        Every contribution follows the same four steps. Nobody in between can redirect it, and you get a
+                        receipt the moment it lands.
+                    </p>
+                    <ol className="fr-route-steps">
+                        <li>
+                            <span className="fr-node" aria-hidden>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5" /><path d="M10.5 18.5h3" /></svg>
+                            </span>
+                            <div>
+                                <b>You pay</b>
+                                <span>UPI, card or netbanking on a secure checkout. Card details never reach Elixpo.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <span className="fr-node" aria-hidden>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.5 4.5 5.5v6c0 4.6 3.2 8.5 7.5 10 4.3-1.5 7.5-5.4 7.5-10v-6Z" /><path d="m8.8 12 2.2 2.2 4.2-4.4" /></svg>
+                            </span>
+                            <div>
+                                <b>Razorpay</b>
+                                <span>An RBI-licensed payment gateway confirms the payment.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <span className="fr-node" aria-hidden>
+                                {/* biome-ignore lint/performance/noImgElement: static mascot */}
+                                <img src="/icon.png" alt="" width={40} height={40} />
+                            </span>
+                            <div>
+                                <b>Elixpo Pay</b>
+                                <span>Records it exactly once, updates the total and emails your receipt.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <span className="fr-node" aria-hidden>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5 12 4l9 5.5" /><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8" /><path d="M3 20.5h18" /></svg>
+                            </span>
+                            <div>
+                                <b>{view.owner.name}</b>
+                                <span>
+                                    {view.owner.verified
+                                        ? "Paid to their bank account, verified through Razorpay KYC."
+                                        : "Paid to their bank account through Razorpay."}
+                                </span>
+                            </div>
+                        </li>
+                    </ol>
+                    <div className="fr-badges">
+                        <span><i>✓</i> RBI-licensed gateway</span>
+                        {view.owner.verified && <span><i>✓</i> KYC-verified recipient</span>}
+                        <span><i>✓</i> Receipt for every payment</span>
+                        <span><i>✓</i> Counted exactly once</span>
+                        <Link href="/refunds">Refund policy →</Link>
+                        <Link href="/docs/fundraisers#money-flow">How fundraisers work →</Link>
+                    </div>
+                    {view.accepts_payments && !preview && (
+                        <div className="actions fr-route-cta">
+                            <a href="#contribute">Contribute now ↑</a>
+                        </div>
+                    )}
+                </section>
             </div>
             {view.accepts_payments && !preview && (
                 <StickyContribute label={`Contribute to ${view.owner.name.split(" ")[0]} →`} />
