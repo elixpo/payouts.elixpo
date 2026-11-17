@@ -4,13 +4,13 @@
 /* ── Hero ── */
 .pay-hero {
   position: relative; min-height: calc(100svh - 104px); margin-top: -90px;
-  padding: clamp(10rem, 20vh, 13rem) max(1.25rem, calc((100% - 1450px) / 2)) 4rem;
+  padding: clamp(8rem, 16vh, 10.5rem) max(1.25rem, calc((100% - 1450px) / 2)) 3.5rem;
   overflow: hidden; display: flex; align-items: center; border-bottom: 1px solid var(--app-border);
 }
 .pay-hero-copy { position: relative; z-index: 2; width: 100%; }
-.pay-hero-copy h1 { max-width: 1250px; font-size: clamp(3.6rem, 7.4vw, 7.6rem); }
+.pay-hero-copy h1 { max-width: 1050px; font-size: clamp(3rem, 6.2vw, 6.2rem); }
 .pay-hero-copy > p:not(.eyebrow) {
-  max-width: 700px; margin: 2.5rem 0 0; color: var(--app-fg-muted);
+  max-width: 640px; margin: 1.6rem 0 0; color: var(--app-fg-muted);
   font-size: clamp(1rem, 1.3vw, 1.18rem); line-height: 1.72;
 }
 .pay-hero-objects { position: absolute; z-index: 1; inset: 0; pointer-events: none; }
@@ -22,7 +22,7 @@
 .orbit-two::after { right: 27px; top: 28px; background: var(--app-orange); }
 .object { position: absolute; display: grid; place-content: center; text-align: center; box-shadow: 0 28px 80px rgba(24, 38, 28, 0.16); }
 .object-code {
-  width: 230px; height: 150px; right: 22%; top: 18%; overflow: hidden;
+  width: 230px; height: 150px; right: 7%; top: 15%; overflow: hidden;
   border-radius: 46% 54% 64% 36%; background: var(--app-yellow); color: #142018; transform: rotate(-8deg);
 }
 .object-code i { position: absolute; width: 150%; height: 1px; left: -20%; background: rgba(20, 32, 24, 0.24); transform: rotate(-28deg); }
@@ -44,6 +44,42 @@
 }
 .pay-hero-note strong { grid-row: span 2; font-size: 3.2rem; letter-spacing: -0.06em; }
 .pay-hero-note span, .pay-hero-note small { color: var(--app-fg-muted); font-size: 0.67rem; line-height: 1.4; }
+
+/* ── Hero: "pick your path" — the obvious next step ── */
+.hero-paths {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem;
+  max-width: 780px; margin-top: 2.2rem;
+}
+.hero-path {
+  position: relative; display: flex; flex-direction: column; gap: 0.45rem; min-height: 190px;
+  padding: 1.35rem 1.4rem 1.25rem; border: 1px solid var(--app-border); border-radius: var(--radius-card);
+  background: var(--app-surface); color: var(--app-fg); text-decoration: none;
+  box-shadow: 0 10px 30px rgba(20, 32, 24, 0.06);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.hero-path:hover { transform: translateY(-3px); border-color: var(--app-fg); box-shadow: var(--app-shadow); }
+.hero-path:focus-visible { outline: 3px solid var(--app-accent); outline-offset: 3px; }
+.hero-path b { font-size: clamp(1.25rem, 1.8vw, 1.55rem); line-height: 1.15; letter-spacing: -0.035em; }
+.hero-path-tag { color: var(--app-accent); font: 700 0.64rem/1.4 var(--font-geist-mono); letter-spacing: 0.16em; text-transform: uppercase; }
+.hero-path-body { color: var(--app-fg-muted); font-size: 0.9rem; line-height: 1.55; }
+.hero-path-cta {
+  display: inline-flex; align-items: center; gap: 0.45rem; align-self: flex-start; margin-top: auto;
+  min-height: 46px; padding: 0.7rem 1.15rem; border-radius: 999px;
+  border: 1px solid var(--app-ink); color: var(--app-fg); font-size: 0.92rem; font-weight: 700;
+}
+.hero-path-cta span { transition: transform 0.18s ease; }
+.hero-path:hover .hero-path-cta span { transform: translateX(3px); }
+/* Primary path: the one highlighted action on the page. */
+.hero-path-primary { background: var(--app-ink); border-color: var(--app-ink); color: var(--app-on-ink); }
+.hero-path-primary .hero-path-tag { color: var(--app-yellow); }
+.hero-path-primary .hero-path-body { color: var(--app-on-ink-muted); }
+.hero-path-primary .hero-path-cta { background: var(--app-yellow); border-color: var(--app-yellow); color: #142018; }
+.hero-path-primary:hover { border-color: var(--app-ink); }
+.hero-secondary { max-width: 780px; margin: 1.1rem 0 0 !important; color: var(--app-fg-muted); font-size: 0.88rem !important; line-height: 1.6 !important; }
+.hero-secondary a { color: var(--app-link); font-weight: 700; }
+
+/* Keep the floating "webhook" card clear of the path cards on laptop widths. */
+@media (max-width: 1400px) { .object-paper { display: none; } }
 
 /* ── Sections ── */
 .section { padding: clamp(5rem, 8vw, 8.5rem) max(1rem, calc((100% - 1450px) / 2)); border-bottom: 1px solid var(--app-border); }
@@ -115,6 +151,7 @@ html[data-theme="dark"] .feature-art > span { color: var(--app-fg); }
 .open-band p:not(.eyebrow) { margin: 0; color: var(--app-fg-muted); font-size: 1.05rem; line-height: 1.7; }
 
 @media (max-width: 1050px) {
+  .pay-hero-objects { opacity: 0.45; }
   .object-code { right: 8%; top: 16%; opacity: 0.5; }
   .object-model { right: 4%; }
   .object-paper { right: 20%; }
@@ -129,6 +166,8 @@ html[data-theme="dark"] .feature-art > span { color: var(--app-fg); }
   .steps article:nth-child(3) { padding-left: 0; }
 }
 @media (max-width: 760px) {
+  .hero-paths { grid-template-columns: 1fr; }
+  .hero-path { min-height: 0; }
   .pay-hero { min-height: 720px; margin-top: -80px; padding: 8.5rem 1rem 2.5rem; align-items: flex-start; }
   .pay-hero-copy h1 { font-size: clamp(3rem, 14vw, 4.6rem); }
   .pay-hero-copy > p:not(.eyebrow) { margin-top: 1.5rem; font-size: 0.95rem; }
