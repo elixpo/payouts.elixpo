@@ -23,6 +23,9 @@ const PREFIXES = {
     payoutAccount: "pa",
     mailHook: "mhk",
     mailDelivery: "mld",
+    fundraiser: "fr",
+    contribution: "ctb",
+    fundraiserReport: "frr",
 } as const;
 
 export type IdKind = keyof typeof PREFIXES;

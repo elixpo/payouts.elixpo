@@ -4,6 +4,7 @@ import type { D1Database } from "@cloudflare/workers-types";
 import { type NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/d1-client";
 import { getEnv, testPaymentsAllowed } from "@/lib/env";
+import { routeTransfers } from "@/lib/route-transfers";
 import { verifyHandoff } from "@/lib/handoff";
 import { isPlatformMerchant, PLATFORM_COMMISSION_BPS } from "@/lib/merchant";
 // ensureProviderCustomer kept available in @/lib/customers for future use
@@ -446,44 +447,3 @@ function parseMeta(raw: unknown): Record<string, any> {
     }
 }
 
-/**
- * Build the Razorpay Route `transfers` for an order when the app's merchant has
- * a connected, active payout account. Splits `amount` to their linked account,
- * holding back the platform commission. Returns undefined when there's no active
- * account (→ funds settle to the platform account, unchanged behaviour).
- */
-async function routeTransfers(
-    db: D1Database,
-    merchantId: string | undefined,
-    amount: number,
-    currency: string,
-    appSlug: string | undefined,
-): Promise<Array<Record<string, unknown>> | undefined> {
-    // The platform owner's products settle directly to the platform account —
-    // never split them.
-    if (!merchantId || isPlatformMerchant(merchantId)) return undefined;
-    const pa = (await db
-        .prepare(
-            `SELECT razorpay_account_id
-             FROM payout_accounts
-             WHERE merchant_id = ? AND status = 'active'
-               AND razorpay_account_id IS NOT NULL`,
-        )
-        .bind(merchantId)
-        .first()) as { razorpay_account_id: string } | null;
-    if (!pa?.razorpay_account_id) return undefined;
-
-    // Platform commission is set by us (hardcoded), never by the merchant.
-    const commission = Math.round((amount * PLATFORM_COMMISSION_BPS) / 10000);
-    const transferAmount = amount - commission;
-    if (transferAmount <= 0) return undefined; // commission ≥ amount → keep it all
-
-    return [
-        {
-            account: pa.razorpay_account_id,
-            amount: transferAmount,
-            currency,
-            notes: appSlug ? { app: appSlug } : {},
-        },
-    ];
-}

@@ -1,0 +1,114 @@
+export const runtime = "edge";
+
+import { type NextRequest, NextResponse } from "next/server";
+import { requireDashboard } from "@/lib/dashboard-auth";
+import {
+    type FundraiserRow,
+    hasEnded,
+    ownerView,
+    parseFundraiserInput,
+    payoutReadiness,
+} from "@/lib/fundraisers";
+
+/**
+ * GET   /api/dashboard/fundraisers/:id — owner view (status, totals, readiness)
+ * PATCH /api/dashboard/fundraisers/:id — edit fields and/or { action }:
+ *         "publish" (draft|closed → live; needs connected payouts)
+ *         "close"   (live → closed; the page stays up as a record)
+ *       A page held by Elixpo moderation can be edited but not re-published.
+ */
+async function load(request: NextRequest, params: Promise<{ id: string }>) {
+    const ctx = await requireDashboard(request);
+    if (ctx instanceof NextResponse) return { error: ctx };
+    const { id } = await params;
+    const row = (await ctx.db
+        .prepare("SELECT * FROM fundraisers WHERE id = ? AND merchant_id = ?")
+        .bind(id, ctx.merchantId)
+        .first()) as FundraiserRow | null;
+    if (!row) {
+        return { error: NextResponse.json({ error: "not_found", error_description: "Fundraiser not found" }, { status: 404 }) };
+    }
+    return { ctx, row };
+}
+
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const r = await load(request, params);
+    if (r.error) return r.error;
+    return NextResponse.json({ fundraiser: await ownerView(r.ctx.db, r.row) });
+}
+
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const r = await load(request, params);
+    if (r.error) return r.error;
+    const { ctx, row } = r;
+    const body: any = await request.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+
+    const parsed = parseFundraiserInput(body, true);
+    if (!parsed.ok) {
+        return NextResponse.json({ error: "invalid_request", error_description: parsed.error }, { status: 400 });
+    }
+    // A published link may already be printed on QR codes — never move it.
+    if (parsed.fields.slug && parsed.fields.slug !== row.slug && row.published_at) {
+        return NextResponse.json(
+            { error: "slug_locked", error_description: "The link can't change after the fundraiser has been published." },
+            { status: 409 },
+        );
+    }
+    if (parsed.fields.slug === row.slug) delete parsed.fields.slug;
+
+    const sets: string[] = [];
+    const vals: unknown[] = [];
+    for (const [k, v] of Object.entries(parsed.fields)) {
+        sets.push(`${k} = ?`);
+        vals.push(v);
+    }
+    // Keep the public byline current with the owner's Accounts profile.
+    sets.push("owner_name = ?", "owner_avatar = ?");
+    vals.push(ctx.session.name || ctx.session.email, ctx.session.avatar ?? null);
+
+    const action = body.action as string | undefined;
+    if (action === "publish") {
+        if (row.status === "held") {
+            return NextResponse.json(
+                { error: "held", error_description: "This page is held by Elixpo moderation. Contact support to restore it." },
+                { status: 409 },
+            );
+        }
+        const readiness = await payoutReadiness(ctx.db, ctx.merchantId);
+        if (!readiness.ready) {
+            return NextResponse.json({ error: "payouts_required", error_description: readiness.reason }, { status: 409 });
+        }
+        const endsAt = parsed.fields.ends_at !== undefined ? parsed.fields.ends_at : row.ends_at;
+        if (hasEnded({ ends_at: endsAt })) {
+            return NextResponse.json(
+                { error: "ended", error_description: "The end date has passed — move it forward or clear it first." },
+                { status: 409 },
+            );
+        }
+        sets.push("status = 'live'", "published_at = COALESCE(published_at, datetime('now'))");
+    } else if (action === "close") {
+        if (row.status !== "live") {
+            return NextResponse.json({ error: "not_live", error_description: "Only a live fundraiser can be closed." }, { status: 409 });
+        }
+        sets.push("status = 'closed'");
+    } else if (action != null) {
+        return NextResponse.json({ error: "invalid_action" }, { status: 400 });
+    }
+
+    sets.push("updated_at = datetime('now')");
+    vals.push(row.id);
+    try {
+        await ctx.db.prepare(`UPDATE fundraisers SET ${sets.join(", ")} WHERE id = ?`).bind(...vals).run();
+    } catch (err) {
+        if (/UNIQUE/i.test(String(err))) {
+            return NextResponse.json(
+                { error: "slug_taken", error_description: "That link is already taken — choose another." },
+                { status: 409 },
+            );
+        }
+        throw err;
+    }
+    const fresh = (await ctx.db.prepare("SELECT * FROM fundraisers WHERE id = ?").bind(row.id).first()) as FundraiserRow;
+    return NextResponse.json({ fundraiser: await ownerView(ctx.db, fresh) });
+}
