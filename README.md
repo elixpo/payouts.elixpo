@@ -301,7 +301,7 @@ source of truth (mascot, palette, rules) is at
 
 The code is licensed under the [MIT License](LICENSE). Brand and visual assets
 are licensed under [CC-BY-4.0](LICENSES/preferred/CC-BY-4.0). The Elixpo and
-Oreo names, mascot, E-badge, and elixpo.com domains are covered by
+Lumi names, the Lumi mascot, the E-badge mark, and elixpo.com domains are covered by
 [`TRADEMARKS.md`](TRADEMARKS.md), not by either licence. See also the repository
 [notice board](LICENSES/NOTICE) and [third-party notices](LICENSES/notices/notice-board).
 

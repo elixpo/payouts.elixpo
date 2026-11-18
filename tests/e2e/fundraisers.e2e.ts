@@ -174,11 +174,11 @@ ok(fx.source === "frankfurter" && fx.rate === 93.5 && fx.as_of === "2026-11-17",
 // ── 1. Create + publish gating ─────────────────────────────────────────────
 let r = await call(dash.POST, "POST", "/api/dashboard/fundraisers", {
     cookie: ownerCookie,
-    body: { title: "Build the first Oreo badge boards", body_md: "# Why\nWe need **parts**.\n<script>alert(1)</script>", goal_amount: 800000, presets: { INR: [10000, 25000, 50000, 100000], USD: [500, 1000] }, thank_you_message: "Thank you for backing Oreo!" },
+    body: { title: "Build the first Falera badge boards", body_md: "# Why\nWe need **parts**.\n<script>alert(1)</script>", goal_amount: 800000, presets: { INR: [10000, 25000, 50000, 100000], USD: [500, 1000] }, thank_you_message: "Thank you for backing Falera!" },
 });
 ok(r.status === 201 && r.json.fundraiser.status === "draft", "creator creates a draft", r.json);
 const f = r.json.fundraiser;
-ok(f.slug === "build-the-first-oreo-badge-boards", "slug derived from the title", f.slug);
+ok(f.slug === "build-the-first-falera-badge-boards", "slug derived from the title", f.slug);
 
 r = await call(pub.GET, "GET", `/api/fundraisers/${f.slug}`, { params: { slug: f.slug } });
 ok(r.status === 404, "draft is not public");
@@ -234,10 +234,10 @@ ok(r.json.raised === 25000 + usdCharge && r.json.contributors === 2 && r.json.us
 ok(r.json.supporters.some((s: any) => s.name === "Asha") && r.json.supporters.some((s: any) => s.name === "Anonymous"), "supporters: shown name + Anonymous", r.json.supporters);
 
 // Display name overrides the account name publicly.
-r = await call(dashOne.PATCH, "PATCH", `/api/dashboard/fundraisers/${f.id}`, { cookie: ownerCookie, params: { id: f.id }, body: { display_name: "  Oreo   Badge Project " } });
-ok(r.json.fundraiser.display_name === "Oreo Badge Project", "display name saved (whitespace tidied)", r.json.fundraiser?.display_name);
+r = await call(dashOne.PATCH, "PATCH", `/api/dashboard/fundraisers/${f.id}`, { cookie: ownerCookie, params: { id: f.id }, body: { display_name: "  Falera   Badge Project " } });
+ok(r.json.fundraiser.display_name === "Falera Badge Project", "display name saved (whitespace tidied)", r.json.fundraiser?.display_name);
 r = await call(pub.GET, "GET", `/api/fundraisers/${f.slug}`, { params: { slug: f.slug } });
-ok(r.json.owner.name === "Oreo Badge Project", "public page shows the display name", r.json.owner);
+ok(r.json.owner.name === "Falera Badge Project", "public page shows the display name", r.json.owner);
 r = await call(dashOne.PATCH, "PATCH", `/api/dashboard/fundraisers/${f.id}`, { cookie: ownerCookie, params: { id: f.id }, body: { display_name: "x".repeat(81) } });
 ok(r.status === 400, "display name over 80 chars rejected", r.json);
 r = await call(contribute.POST, "POST", `/api/fundraisers/${f.slug}/contribute`, { params: { slug: f.slug }, body: { currency: "INR", amount: 25000, email: "a@b" } });
@@ -247,7 +247,7 @@ const thanks = mails.filter((m) => m.hook.endsWith("/thanks"));
 const owner = mails.filter((m) => m.hook.endsWith("/owner"));
 ok(thanks.length === 2 && owner.length === 2, "1 thank-you + 1 owner email per contribution", mails.map((m) => m.hook));
 ok(mails.every((m) => m.sigOk), "every Mails trigger is correctly signed");
-ok(thanks[0].body.to === "asha@x.test" && thanks[0].body.variables.thank_you_message === "Thank you for backing Oreo!", "thank-you email has recipient + message", thanks[0].body);
+ok(thanks[0].body.to === "asha@x.test" && thanks[0].body.variables.thank_you_message === "Thank you for backing Falera!", "thank-you email has recipient + message", thanks[0].body);
 ok(owner[0].body.to === "owner@elixpo.test" && owner[1].body.variables.total_raised.startsWith("₹"), "owner alert has running total", owner[1]?.body?.variables);
 const st = sqlite.prepare("SELECT thanks_email_status s FROM contributions WHERE id = ?").get(c1) as any;
 ok(st.s === "sent", "email outcome recorded on the contribution", st);
@@ -329,7 +329,7 @@ ok(injected.length === 2 && plainVals.every((v) => !/[<>"]/.test(v)), "plain var
 const ownerMsg = injected.find((m) => m.hook.endsWith("/owner"))?.body.variables.message_html ?? "";
 ok(ownerMsg.includes("&lt;a href=&quot;https://evil.test&quot;&gt;") && !ownerMsg.includes("<a ") && ownerMsg.includes("<br>"), "message block is escaped (and keeps line breaks)", ownerMsg);
 const thankVars = injected.find((m) => m.hook.endsWith("/thanks"))?.body.variables ?? {};
-ok(thankVars.thank_you_html.includes("Thank you for backing Oreo!") && thankVars.message_html.includes("Your message"), "thank-you email carries optional note + message blocks", thankVars);
+ok(thankVars.thank_you_html.includes("Thank you for backing Falera!") && thankVars.message_html.includes("Your message"), "thank-you email carries optional note + message blocks", thankVars);
 r = await call(contribute.POST, "POST", `/api/fundraisers/${f.slug}/contribute`, { params: { slug: f.slug }, body: { currency: "INR", amount: 10000, email: "q@x.test" } });
 await call(confirm.POST, "POST", `/api/fundraisers/contributions/${r.json.contribution_id}`, { params: { id: r.json.contribution_id }, body: { test: true } });
 ok(mails[mails.length - 1].body.variables.message_html === "", "no message → empty block (no blank box)", mails[mails.length - 1].body.variables);
