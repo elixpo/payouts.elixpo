@@ -29,6 +29,7 @@ const COLUMNS: { title: string; links: { label: string; href: string; external?:
             { label: "Privacy", href: "/privacy" },
             { label: "Terms", href: "/terms" },
             { label: "Refunds", href: "/refunds" },
+            { label: "Email policy", href: "/email-policy" },
         ],
     },
 ];

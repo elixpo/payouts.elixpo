@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import PolicyLinks from "@/components/trust/policy-links";
 
 type Cur = "INR" | "USD";
 
@@ -410,6 +411,7 @@ export default function ContributeForm({
                     how your money reaches {ownerName.split(" ")[0]} ↓
                 </a>
             </p>
+            <PolicyLinks trust="contributing" newTab lead="By paying you agree to the" align="center" style={{ marginTop: "0.35rem", fontSize: "0.7rem" }} />
         </>
     );
 }

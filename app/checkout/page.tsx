@@ -16,6 +16,8 @@ import {
 } from "@mui/material";
 import { useSearchParams } from "next/navigation";
 import { type ReactNode, Suspense, useEffect, useState } from "react";
+import FlowDiagram from "@/components/trust/flow-diagram";
+import PolicyLinks from "@/components/trust/policy-links";
 import BackgroundAurora from "../components/background-aurora";
 
 declare global {
@@ -726,35 +728,87 @@ function ActionPanel({
                 Cancel and go back
             </Button>
 
-            <Typography
-                sx={{
-                    color: "var(--app-fg-muted)",
-                    fontSize: "0.76rem",
+            {session.billing_mode === "autopay" && (
+                <Typography
+                    sx={{
+                        color: "var(--app-fg-muted)",
+                        fontSize: "0.78rem",
+                        textAlign: "center",
+                        mt: 2,
+                        lineHeight: 1.5,
+                        fontFamily: "var(--font-sofia-sans)",
+                    }}
+                >
+                    Auto-pay uses a UPI AutoPay or card e-mandate under RBI rules. Cancel any time: future renewals stop and you keep access until the end of the period you paid for.
+                </Typography>
+            )}
+
+            <PolicyLinks trust="buying" newTab
+                lead="By paying you agree to the"
+                align="center"
+                style={{ marginTop: "1.25rem", fontFamily: "var(--font-sofia-sans)" }}
+            />
+
+            <HowItWorks autopay={session.billing_mode === "autopay"} />
+        </Box>
+    );
+}
+
+/* ── Collapsible "How this payment works" (secondary, under the pay button) ── */
+function HowItWorks({ autopay }: { autopay: boolean }) {
+    return (
+        <Box
+            component="details"
+            sx={{
+                mt: 2,
+                borderTop: "1px solid var(--app-overlay)",
+                pt: 1.5,
+                fontFamily: "var(--font-sofia-sans)",
+                "& > summary": {
+                    cursor: "pointer",
+                    listStyle: "none",
                     textAlign: "center",
-                    mt: 2.5,
-                    fontFamily: "var(--font-sofia-sans)",
-                }}
-            >
-                By paying you agree to our{" "}
-                <Box
-                    component="a"
-                    href="/terms"
-                    target="_blank"
-                    sx={{ color: "var(--app-accent)", textDecoration: "none", fontWeight: 500 }}
-                >
-                    Terms
-                </Box>{" "}
-                &{" "}
-                <Box
-                    component="a"
-                    href="/refunds"
-                    target="_blank"
-                    sx={{ color: "var(--app-accent)", textDecoration: "none", fontWeight: 500 }}
-                >
-                    Refund policy
-                </Box>
-                .
-            </Typography>
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    color: "var(--app-fg-muted)",
+                    "&::-webkit-details-marker": { display: "none" },
+                    "&::after": { content: '" +"', fontWeight: 700 },
+                    "&:hover": { color: "var(--app-fg)" },
+                },
+                "&[open] > summary::after": { content: '" \\2212"' },
+            }}
+        >
+            <summary>How this payment works</summary>
+            <Box sx={{ mt: 2 }}>
+                <FlowDiagram
+                    compact
+                    title="How this payment works"
+                    steps={[
+                        {
+                            icon: "phone",
+                            title: "You pay",
+                            body: autopay
+                                ? "Approve an auto-pay mandate on Razorpay."
+                                : "UPI, card or netbanking on Razorpay.",
+                        },
+                        {
+                            icon: "shield",
+                            title: "Razorpay",
+                            body: "RBI-regulated. Card and UPI details never reach Elixpo.",
+                        },
+                        {
+                            icon: "panda",
+                            title: "Elixpo Pay",
+                            body: "Records it once and tells the app with a signed webhook.",
+                        },
+                        {
+                            icon: "check",
+                            title: "Unlocked",
+                            body: "Your access turns on in the app.",
+                        },
+                    ]}
+                />
+            </Box>
         </Box>
     );
 }

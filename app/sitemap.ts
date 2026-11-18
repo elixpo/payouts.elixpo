@@ -23,6 +23,7 @@ const ROUTES: Array<[string, number]> = [
     ["/refunds", 0.4],
     ["/contact", 0.5],
     ["/trust", 0.7],
+    ["/email-policy", 0.4],
 ];
 
 export const runtime = "edge";

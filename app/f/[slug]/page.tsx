@@ -17,6 +17,7 @@ import HeartyBackground from "./hearty-background";
 import CoverCarousel from "./cover-carousel";
 import StickyContribute from "./sticky-contribute";
 import ContributeForm from "./contribute-form";
+import PolicyLinks from "@/components/trust/policy-links";
 import ReportLink from "./report-link";
 import "../fundraiser.css";
 
@@ -242,10 +243,10 @@ export default async function FundraiserPage({ params }: Params) {
                                 are processed by Razorpay through Elixpo Pay. A fundraiser is a donation, not a purchase:
                                 nothing is promised in return, and contributions are <strong>not tax-deductible</strong>.
                             </p>
-                            <p style={{ margin: "0.6rem 0 0" }}>
-                                See the <Link href="/refunds">refund policy</Link>. Something wrong with this page?{" "}
-                                <ReportLink slug={view.slug} />
+                            <p style={{ margin: "0.6rem 0 0.6rem" }}>
+                                Something wrong with this page? <ReportLink slug={view.slug} />
                             </p>
+                            <PolicyLinks trust="contributing" lead="Policies:" />
                         </div>
                     </section>
                 </div>

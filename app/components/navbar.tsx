@@ -21,6 +21,7 @@ const LINKS = [
     { label: "Pricing", href: "/pricing" },
     { label: "Docs", href: "/docs" },
     { label: "Quickstart", href: "/docs/quickstart" },
+    { label: "Trust", href: "/trust" },
 ];
 
 function formatStars(n: number): string {
