@@ -139,7 +139,7 @@ export default function FundraisersPage() {
                         { icon: "heart", title: "Create", body: "Write your page as a draft." },
                         { icon: "bank", title: "Connect payouts", body: "Required before you can publish." },
                         { icon: "phone", title: "Publish & share", body: "Share the link or QR. Supporters pay by UPI or card and get an email receipt." },
-                        { icon: "check", title: "Money reaches your bank", body: "Via Razorpay Route, minus Elixpo's 2% platform fee." },
+                        { icon: "check", title: "Money reaches your bank", body: "Via Razorpay Route, minus Elixpo's 5% all-in fee." },
                     ]}
                 />
                 <Typography sx={{ color: "var(--app-fg-muted)", fontSize: "0.8rem", lineHeight: 1.6, mt: 2 }}>

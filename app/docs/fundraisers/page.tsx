@@ -1,7 +1,7 @@
 "use client";
 
 import { Box } from "@mui/material";
-import { Code, DocH2, DocLead, DocList, DocP, DocTitle } from "@/components/docs-prose";
+import { Code, DocH2, DocLead, DocList, DocP, DocTitle, DocActions } from "@/components/docs-prose";
 
 export default function FundraisersDocs() {
     return (
@@ -12,6 +12,7 @@ export default function FundraisersDocs() {
                 link or QR code, no account needed. Contributors get a thank-you page and a receipt email; you see every
                 contribution live in the dashboard.
             </DocLead>
+            <DocActions actions={[{ label: "Start a fundraiser", href: "/dashboard/fundraisers", hint: "Write it, connect your bank, publish and share.", primary: true }, { label: "Connect your bank", href: "/dashboard/payouts", hint: "Razorpay verifies you once; payments then reach your bank." }]} />
 
             <DocH2>Start a fundraiser</DocH2>
             <DocList
@@ -107,7 +108,7 @@ export default function FundraisersDocs() {
                     <b>The creator's bank</b>
                     <span>
                         Paid out through Razorpay Route to the creator's bank account, verified by Razorpay KYC (Elixpo's
-                        own fundraisers settle to the platform account). A 2% platform fee applies to third-party payouts.
+                        own fundraisers settle to the platform account). A 5% all-in fee (gateway charges included) applies to third-party payouts.
                     </span>
                 </li>
             </Box>

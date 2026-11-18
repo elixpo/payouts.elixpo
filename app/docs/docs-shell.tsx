@@ -7,6 +7,7 @@ import {
     ContentCopy as ContentCopyIcon,
 } from "@mui/icons-material";
 import MenuIcon from "@mui/icons-material/Menu";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import {
     Box,
     Button,
@@ -17,32 +18,38 @@ import {
     ListItemButton,
     ListItemText,
     Snackbar,
-    Stack,
-    Toolbar,
     Tooltip,
     Typography,
 } from "@mui/material";
-import AppBar from "@mui/material/AppBar";
-import IconButton from "@mui/material/IconButton";
 import { ThemeProvider } from "@mui/material/styles";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { makeDashboardTheme } from "@/components/dashboard-ui";
-import { ThemeToggle, useThemeMode } from "@/components/theme-mode";
+import { useThemeMode } from "@/components/theme-mode";
 import BackgroundAurora from "../components/background-aurora";
+import Footer from "../components/footer";
+import Navbar from "../components/navbar";
 
 const DOCS_NAV = [
-    { label: "Overview", href: "/docs" },
-    { label: "Quickstart", href: "/docs/quickstart" },
-    { label: "Catalog sync", href: "/docs/catalog" },
-    { label: "Checkout sessions", href: "/docs/checkout" },
-    { label: "Webhooks", href: "/docs/webhooks" },
-    { label: "Entitlements API", href: "/docs/entitlements" },
-    { label: "Buyer emails", href: "/docs/emails" },
-    { label: "Fundraisers", href: "/docs/fundraisers" },
-    { label: "Connected payouts", href: "/docs/payouts" },
+    { label: "Overview", href: "/docs", group: "Get started" },
+    { label: "Quickstart", href: "/docs/quickstart", group: "Get started" },
+    { label: "Catalog sync", href: "/docs/catalog", group: "Build" },
+    { label: "Checkout sessions", href: "/docs/checkout", group: "Build" },
+    { label: "Webhooks", href: "/docs/webhooks", group: "Build" },
+    { label: "Entitlements API", href: "/docs/entitlements", group: "Build" },
+    { label: "Buyer emails", href: "/docs/emails", group: "Build" },
+    { label: "Fundraisers", href: "/docs/fundraisers", group: "Get paid" },
+    { label: "Connected payouts", href: "/docs/payouts", group: "Get paid" },
+];
+const GROUPS = ["Get started", "Build", "Get paid"] as const;
+
+/** The three things every integrator has to do in the dashboard. */
+const SETUP = [
+    { label: "Create an app & secret key", href: "/dashboard/products" },
+    { label: "Connect your bank", href: "/dashboard/payouts" },
+    { label: "Start a fundraiser", href: "/dashboard/fundraisers" },
 ];
 
 export default function DocsShell({
@@ -158,51 +165,96 @@ export default function DocsShell({
     const next =
         idx >= 0 && idx < DOCS_NAV.length - 1 ? DOCS_NAV[idx + 1] : null;
 
-    // Responsive Sidebar renderer
+    const current = idx >= 0 ? DOCS_NAV[idx] : null;
+
     const renderSidebar = () => (
         <Box sx={{ p: 2 }}>
-            <List sx={{ px: 0 }}>
-                {DOCS_NAV.map((item) => {
-                    const active = pathname === item.href;
-                    return (
-                        <ListItem
-                            key={item.href}
-                            disablePadding
-                            sx={{ mb: 0.5 }}
-                        >
-                            <ListItemButton
-                                component={Link}
-                                href={item.href}
-                                onClick={() => setMobileOpen(false)}
-                                sx={{
-                                    borderRadius: "8px",
-                                    py: 0.9,
-                                    px: 2,
-                                    bgcolor: active
-                                        ? "var(--app-overlay)"
-                                        : "transparent",
-                                    color: active
-                                        ? "var(--app-accent)"
-                                        : "var(--app-fg-muted)",
-                                    "&:hover": {
-                                        bgcolor: "var(--app-overlay)",
-                                        color: active ? "var(--app-accent)" : "var(--app-fg)",
-                                    },
-                                }}
-                            >
-                                <ListItemText
-                                    primary={item.label}
-                                    primaryTypographyProps={{
-                                        fontSize: "0.9rem",
-                                        fontWeight: active ? 600 : 500,
-                                        fontFamily: "var(--font-sofia-sans)",
-                                    }}
-                                />
-                            </ListItemButton>
-                        </ListItem>
-                    );
-                })}
-            </List>
+            {GROUPS.map((g) => (
+                <Box key={g} sx={{ mb: 2 }}>
+                    <Typography
+                        sx={{
+                            px: 2,
+                            mb: 0.6,
+                            fontSize: "0.66rem",
+                            fontWeight: 700,
+                            letterSpacing: "0.14em",
+                            textTransform: "uppercase",
+                            fontFamily: "var(--font-geist-mono)",
+                            color: "var(--app-fg-faint)",
+                        }}
+                    >
+                        {g}
+                    </Typography>
+                    <List sx={{ p: 0 }}>
+                        {DOCS_NAV.filter((n) => n.group === g).map((item) => {
+                            const active = pathname === item.href;
+                            return (
+                                <ListItem key={item.href} disablePadding sx={{ mb: 0.25 }}>
+                                    <ListItemButton
+                                        component={Link}
+                                        href={item.href}
+                                        aria-current={active ? "page" : undefined}
+                                        onClick={() => setMobileOpen(false)}
+                                        sx={{
+                                            borderRadius: "10px",
+                                            py: 0.7,
+                                            px: 2,
+                                            borderLeft: "2px solid",
+                                            borderColor: active ? "var(--app-accent)" : "transparent",
+                                            bgcolor: active ? "var(--app-overlay)" : "transparent",
+                                            color: active ? "var(--app-fg)" : "var(--app-fg-muted)",
+                                            "&:hover": { bgcolor: "var(--app-overlay)", color: "var(--app-fg)" },
+                                        }}
+                                    >
+                                        <ListItemText
+                                            primary={item.label}
+                                            primaryTypographyProps={{
+                                                fontSize: "0.88rem",
+                                                fontWeight: active ? 650 : 500,
+                                                fontFamily: "var(--font-sofia-sans)",
+                                            }}
+                                        />
+                                    </ListItemButton>
+                                </ListItem>
+                            );
+                        })}
+                    </List>
+                </Box>
+            ))}
+
+            <Box
+                sx={{
+                    mt: 1,
+                    p: 1.8,
+                    borderRadius: "14px",
+                    border: "1px solid var(--app-border)",
+                    background: "var(--app-surface)",
+                }}
+            >
+                <Typography sx={{ fontWeight: 700, fontSize: "0.85rem", mb: 1 }}>Set up in the dashboard</Typography>
+                {SETUP.map((a) => (
+                    <Box
+                        key={a.href}
+                        component={Link}
+                        href={a.href}
+                        onClick={() => setMobileOpen(false)}
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            py: 0.6,
+                            fontSize: "0.82rem",
+                            fontWeight: 600,
+                            color: "var(--app-link)",
+                            textDecoration: "none",
+                            "&:hover": { textDecoration: "underline" },
+                        }}
+                    >
+                        {a.label}
+                        <ChevronRightIcon sx={{ fontSize: 16 }} />
+                    </Box>
+                ))}
+            </Box>
         </Box>
     );
 
@@ -212,190 +264,44 @@ export default function DocsShell({
                 open={copied}
                 autoHideDuration={2400}
                 onClose={() => setCopied(false)}
-                anchorOrigin={{
-                    vertical: "bottom",
-                    horizontal: "center",
-                }}
+                anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
                 message="Copied page as markdown to clipboard — paste into any LLM"
             />
-            <Box
-                sx={{
-                    position: "relative",
-                    minHeight: "100vh",
-                    bgcolor: "var(--app-bg)", // Canvas Cream
-                    color: "var(--app-fg)", // Ink Black
-                }}
-            >
+            <Box sx={{ position: "relative", minHeight: "100vh", color: "var(--app-fg)" }}>
                 <BackgroundAurora variant="docs" />
-                <Box
-                    sx={{
-                        position: "relative",
-                        zIndex: 1,
-                        display: "flex",
-                        flexDirection: "column",
-                        minHeight: "100vh",
-                    }}
-                >
-                    {/* Documentation Header */}
-                    <AppBar
-                        position="sticky"
-                        elevation={0}
-                        sx={{
-                            bgcolor: "var(--app-surface)",
-                            backdropFilter: "blur(24px)",
-                            borderBottom: "1px solid var(--app-overlay)",
-                            color: "var(--app-fg)",
-                        }}
-                    >
-                        <Toolbar
-                            sx={{
-                                maxWidth: "1280px",
-                                width: "100%",
-                                mx: "auto",
-                                px: { xs: 2, md: 3 },
-                            }}
-                        >
-                            <IconButton
-                                color="inherit"
-                                edge="start"
-                                onClick={() => setMobileOpen(!mobileOpen)}
-                                sx={{ mr: 2, display: { md: "none" } }}
-                            >
-                                <MenuIcon />
-                            </IconButton>
+                <Box sx={{ position: "relative", zIndex: 1 }}>
+                    <Navbar />
 
-                            <Box
-                                component={Link}
-                                href="/"
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    textDecoration: "none",
-                                }}
-                            >
-                                <Box
-                                    component="img"
-                                    src="/logo.png"
-                                    alt="Elixpo Pay"
-                                    sx={{
-                                        height: 24,
-                                        width: "auto",
-                                        display: "block",
-                                    }}
-                                />
-                                <Typography
-                                    sx={{
-                                        fontWeight: 700,
-                                        fontSize: "14px",
-                                        letterSpacing: "-0.01em",
-                                        color: "var(--app-fg)",
-                                        ml: 1.5,
-                                        fontFamily: "var(--font-sofia-sans)",
-                                    }}
-                                >
-                                    Elixpo{" "}
-                                    <Box
-                                        component="span"
-                                        sx={{ color: "var(--app-fg-muted)", fontWeight: 600 }}
-                                    >
-                                        Docs
-                                    </Box>
-                                </Typography>
-                            </Box>
-
-                            <Box sx={{ flexGrow: 1 }} />
-
-                            <Stack direction="row" spacing={1.5} alignItems="center">
-                                <ThemeToggle size={40} />
-                                {/* Outlined Pill Copy Button */}
-                                <Tooltip
-                                    title={
-                                        copied
-                                            ? "Copied!"
-                                            : "Copy this page as plain text to paste into an LLM"
-                                    }
-                                    arrow
-                                >
-                                    <Button
-                                        onClick={handleCopyForLlm}
-                                        startIcon={
-                                            copied ? (
-                                                <CheckIcon sx={{ fontSize: "1.1rem !important" }} />
-                                            ) : (
-                                                <ContentCopyIcon sx={{ fontSize: "1.05rem !important" }} />
-                                            )
-                                        }
-                                        sx={{
-                                            color: copied ? "var(--app-accent)" : "var(--app-fg)",
-                                            textTransform: "none",
-                                            fontWeight: 500,
-                                            fontSize: "13px",
-                                            px: 2.5,
-                                            py: 0.5,
-                                            borderRadius: "999px", // Signature button radius
-                                            border: "1.5px solid var(--app-fg)",
-                                            background: "var(--app-surface)",
-                                            fontFamily: "var(--font-sofia-sans)",
-                                            "&:hover": {
-                                                bgcolor: "var(--app-overlay)",
-                                                borderColor: "var(--app-fg)",
-                                            },
-                                        }}
-                                    >
-                                        {copied ? "Copied" : "Copy for LLM"}
-                                    </Button>
-                                </Tooltip>
-                                
-                                <Button
-                                    component={Link}
-                                    href="/dashboard"
-                                    sx={{
-                                        textTransform: "none",
-                                        fontWeight: 500,
-                                        fontSize: "14px",
-                                        color: "var(--app-fg)",
-                                        fontFamily: "var(--font-sofia-sans)",
-                                        "&:hover": {
-                                            bgcolor: "var(--app-overlay)",
-                                        },
-                                    }}
-                                >
-                                    Dashboard
-                                </Button>
-                            </Stack>
-                        </Toolbar>
-                    </AppBar>
-
-                    {/* Docs Body Content Grid */}
                     <Box
                         sx={{
                             display: "flex",
-                            flexGrow: 1,
                             maxWidth: "1280px",
                             width: "100%",
                             mx: "auto",
                             px: { xs: 2, md: 3 },
+                            pt: { xs: 2, md: 4 },
                         }}
                     >
-                        {/* Desktop Sidebar Navigation */}
+                        {/* Desktop sidebar */}
                         <Box
                             component="nav"
+                            aria-label="Documentation"
                             sx={{
-                                width: 240,
+                                width: 250,
                                 flexShrink: 0,
                                 display: { xs: "none", md: "block" },
                                 borderRight: "1px solid var(--app-overlay)",
                                 position: "sticky",
-                                top: 64,
-                                height: "calc(100vh - 64px)",
+                                top: 110,
+                                alignSelf: "flex-start",
+                                maxHeight: "calc(100vh - 120px)",
                                 overflowY: "auto",
-                                pt: 2,
                             }}
                         >
                             {renderSidebar()}
                         </Box>
 
-                        {/* Mobile Drawer Navigation */}
+                        {/* Mobile drawer */}
                         <Drawer
                             variant="temporary"
                             open={mobileOpen}
@@ -404,8 +310,8 @@ export default function DocsShell({
                             sx={{
                                 display: { xs: "block", md: "none" },
                                 "& .MuiDrawer-paper": {
-                                    width: 260,
-                                    bgcolor: "var(--app-surface)",
+                                    width: 280,
+                                    bgcolor: "var(--app-bg)",
                                     borderRight: "1px solid var(--app-border)",
                                     color: "var(--app-fg)",
                                 },
@@ -414,57 +320,91 @@ export default function DocsShell({
                             {renderSidebar()}
                         </Drawer>
 
-                        {/* Main Docs Content */}
                         <Box
                             component="main"
                             id="main-content"
                             tabIndex={-1}
-                            sx={{
-                                flexGrow: 1,
-                                minWidth: 0,
-                                pt: 5,
-                                pb: 10,
-                                px: { xs: 0, md: 5 },
-                                maxWidth: 820,
-                            }}
+                            sx={{ flexGrow: 1, minWidth: 0, pb: 10, px: { xs: 0, md: 5 }, maxWidth: 860 }}
                         >
-                            <Box id="docs-content">{children}</Box>
-
-                            <Divider
-                                sx={{
-                                    my: 5,
-                                    borderColor: "var(--app-overlay)",
-                                }}
-                            />
-
-                            {/* Pagination Controls */}
+                            {/* Docs toolbar: menu (mobile), breadcrumb, copy-for-LLM */}
                             <Box
                                 sx={{
                                     display: "flex",
-                                    justifyContent: "space-between",
-                                    gap: 2,
+                                    alignItems: "center",
+                                    gap: 1,
                                     flexWrap: "wrap",
+                                    pb: 2,
+                                    mb: 4,
+                                    borderBottom: "1px solid var(--app-overlay)",
                                 }}
                             >
-                                {prev ? (
+                                <Button
+                                    onClick={() => setMobileOpen(true)}
+                                    startIcon={<MenuIcon />}
+                                    sx={{ ...pillBtn, display: { xs: "inline-flex", md: "none" } }}
+                                >
+                                    Menu
+                                </Button>
+                                <Box
+                                    component="nav"
+                                    aria-label="Breadcrumb"
+                                    sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 0.5,
+                                        fontSize: "0.85rem",
+                                        color: "var(--app-fg-muted)",
+                                        "& a": { color: "inherit", textDecoration: "none" },
+                                        "& a:hover": { color: "var(--app-fg)" },
+                                    }}
+                                >
+                                    <Link href="/docs">Docs</Link>
+                                    {current && current.href !== "/docs" ? (
+                                        <>
+                                            <ChevronRightIcon sx={{ fontSize: 16 }} />
+                                            <span>{current.group}</span>
+                                            <ChevronRightIcon sx={{ fontSize: 16 }} />
+                                            <Box component="span" sx={{ color: "var(--app-fg)", fontWeight: 600 }}>
+                                                {current.label}
+                                            </Box>
+                                        </>
+                                    ) : null}
+                                </Box>
+                                <Box sx={{ flexGrow: 1 }} />
+                                <Tooltip title="Copy this page as markdown to paste into an LLM" arrow>
                                     <Button
-                                        component={Link}
-                                        href={prev.href}
-                                        startIcon={<ArrowBackIcon />}
-                                        sx={navBtn}
+                                        onClick={handleCopyForLlm}
+                                        startIcon={
+                                            copied ? (
+                                                <CheckIcon sx={{ fontSize: "1rem !important" }} />
+                                            ) : (
+                                                <ContentCopyIcon sx={{ fontSize: "0.95rem !important" }} />
+                                            )
+                                        }
+                                        sx={{ ...pillBtn, color: copied ? "var(--app-accent)" : "var(--app-fg)" }}
                                     >
+                                        {copied ? "Copied" : "Copy for LLM"}
+                                    </Button>
+                                </Tooltip>
+                                <Button component={Link} href="/dashboard/products" sx={inkBtn}>
+                                    Get API keys
+                                </Button>
+                            </Box>
+
+                            <Box id="docs-content">{children}</Box>
+
+                            <Divider sx={{ my: 5, borderColor: "var(--app-overlay)" }} />
+
+                            <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
+                                {prev ? (
+                                    <Button component={Link} href={prev.href} startIcon={<ArrowBackIcon />} sx={navBtn}>
                                         {prev.label}
                                     </Button>
                                 ) : (
                                     <Box />
                                 )}
                                 {next ? (
-                                    <Button
-                                        component={Link}
-                                        href={next.href}
-                                        endIcon={<ArrowForwardIcon />}
-                                        sx={navBtn}
-                                    >
+                                    <Button component={Link} href={next.href} endIcon={<ArrowForwardIcon />} sx={navBtn}>
                                         {next.label}
                                     </Button>
                                 ) : (
@@ -473,11 +413,36 @@ export default function DocsShell({
                             </Box>
                         </Box>
                     </Box>
+
+                    <Footer />
                 </Box>
             </Box>
         </ThemeProvider>
     );
 }
+
+const pillBtn = {
+    textTransform: "none",
+    fontWeight: 600,
+    fontSize: "13px",
+    px: 2,
+    py: 0.5,
+    minHeight: 38,
+    borderRadius: "999px",
+    border: "1px solid var(--app-border)",
+    background: "var(--app-surface)",
+    color: "var(--app-fg)",
+    fontFamily: "var(--font-sofia-sans)",
+    "&:hover": { bgcolor: "var(--app-overlay)", borderColor: "var(--app-fg)" },
+};
+
+const inkBtn = {
+    ...pillBtn,
+    border: "1px solid var(--app-ink)",
+    background: "var(--app-ink)",
+    color: "var(--app-on-ink)",
+    "&:hover": { bgcolor: "var(--app-ink)", opacity: 0.88 },
+};
 
 const navBtn = {
     color: "var(--app-fg)",
@@ -488,7 +453,7 @@ const navBtn = {
     px: 2.5,
     py: 1,
     border: "1.5px solid",
-    borderRadius: "999px", // Signature button radius
+    borderRadius: "999px",
     background: "var(--app-surface)",
     "&:hover": { borderColor: "var(--app-fg)", bgcolor: "var(--app-overlay)" },
 };

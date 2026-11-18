@@ -7,6 +7,7 @@ import {
     DocList,
     DocP,
     DocTitle,
+    DocActions,
 } from "@/components/docs-prose";
 import { Box } from "@mui/material";
 import CodeBlock from "../../components/code-block";
@@ -71,6 +72,7 @@ export default function CheckoutDocs() {
                 buyer there. Your app never sees card data and never signs an
                 amount.
             </DocLead>
+            <DocActions actions={[{ label: "Create an app & get your secret key", href: "/dashboard/products", hint: "Dashboard → Products → New app. Shown once; roll it any time.", primary: true }, { label: "Catalog sync", href: "/docs/catalog", hint: "Define tiers and prices in code." }]} />
 
             <DocH2>Create a session</DocH2>
             <CodeBlock code={CREATE} language="http" />

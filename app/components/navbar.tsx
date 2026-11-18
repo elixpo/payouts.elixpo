@@ -61,7 +61,9 @@ export default function Navbar() {
     useEffect(() => setOpen(false), [pathname]);
 
     const isActive = (href: string) =>
-        href === "/docs" ? pathname === "/docs" : pathname === href || pathname.startsWith(`${href}/`);
+        href === "/docs"
+            ? pathname.startsWith("/docs") && !pathname.startsWith("/docs/quickstart")
+            : pathname === href || pathname.startsWith(`${href}/`);
 
     const account =
         me === undefined ? null : me ? (

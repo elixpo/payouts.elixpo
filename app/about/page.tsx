@@ -22,7 +22,7 @@ const BLOCKS: { title: string; body: string; category: string }[] = [
     },
     {
         title: "Razorpay now, Stripe soon",
-        body: "Use your own Razorpay account today. Stripe for international payments is coming soon — and you can switch or add providers without changing your code.",
+        body: "No gateway account needed: Elixpo Pay collects through Razorpay for you today. Stripe for international payments is on the roadmap, behind the same API, so your code won't change.",
         category: "ROUTING",
     },
     {

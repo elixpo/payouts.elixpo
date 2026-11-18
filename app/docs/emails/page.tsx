@@ -8,6 +8,7 @@ import {
     DocList,
     DocP,
     DocTitle,
+    DocActions,
 } from "@/components/docs-prose";
 import CodeBlock from "../../components/code-block";
 
@@ -118,6 +119,7 @@ export default function EmailsDocs() {
                 ]}
             />
             <CodeBlock code={CHECKOUT} language="http" />
+            <DocActions actions={[{ label: "Open Elixpo Mails", href: "https://mails.elixpo.com", hint: "Connect a sender and design your templates.", primary: true }, { label: "Open your app settings", href: "/dashboard/products", hint: "Your app → Buyer emails · Elixpo Mails → Send test." }]} />
 
             <DocH2>What Elixpo Pay sends to Mails</DocH2>
             <DocP>

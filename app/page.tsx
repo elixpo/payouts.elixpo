@@ -60,7 +60,7 @@ const INDEX = [
     {
         tag: "Providers",
         title: "Razorpay today, Stripe soon",
-        body: "Use your own Razorpay account or let Elixpo Pay collect for you. Stripe for international payments is on the way.",
+        body: "No gateway account needed: Elixpo Pay collects through Razorpay and pays you out. Stripe for international payments is on the roadmap.",
         href: "/pricing",
     },
 ];
