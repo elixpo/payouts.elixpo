@@ -517,7 +517,7 @@ export default function FundraiserEditor({
     return (
         <Stack spacing={2.2}>
             <TextField label="Title" value={d.title} onChange={set("title")} required fullWidth sx={field}
-                inputProps={{ maxLength: 100 }} helperText="e.g. Build the first Oreo badge boards" />
+                inputProps={{ maxLength: 100 }} helperText="e.g. Build the first Falera badge boards" />
             <TextField
                 label="Link"
                 value={d.slug}
@@ -536,7 +536,7 @@ export default function FundraiserEditor({
                 fullWidth
                 sx={field}
                 inputProps={{ maxLength: 80 }}
-                placeholder="e.g. Ayushman Bhattacharya, or Oreo Badge Project"
+                placeholder="e.g. Ayushman Bhattacharya, or Falera Badge Project"
                 helperText="Shown on the page and in receipts instead of your account name — use your legal or project name."
             />
             <TextField
@@ -588,7 +588,7 @@ export default function FundraiserEditor({
                 label="GitHub or website (optional)"
                 value={d.link_url}
                 onChange={(v) => patch({ link_url: v })}
-                placeholder="https://github.com/elixpo/oreo"
+                placeholder="https://github.com/elixpo/falera"
                 error={linkError}
                 helper="Shown on the page so supporters can see the project."
             />

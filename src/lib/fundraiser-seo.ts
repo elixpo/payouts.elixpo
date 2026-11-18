@@ -21,7 +21,7 @@ export function plainExcerpt(md: string, n = 155): string {
     return t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t;
 }
 
-/** "Ayushman is raising ₹8,000 for Build the first Oreo badges. <excerpt>" */
+/** "Ayushman is raising ₹8,000 for Build the first Falera badges. <excerpt>" */
 export function fundraiserDescription(row: FundraiserRow): string {
     const who = publicName(row);
     const lead = `${who} is raising ${inr(row.goal_amount)} for ${row.title}.`;
