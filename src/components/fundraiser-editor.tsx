@@ -525,7 +525,7 @@ export default function FundraiserEditor({
                 fullWidth
                 sx={field}
                 disabled={slugLocked}
-                placeholder="oreo-badge"
+                placeholder="falera-badge"
                 InputProps={{ startAdornment: <Box component="span" sx={{ color: "var(--app-fg-muted)", mr: 0.5, whiteSpace: "nowrap" }}>payouts.elixpo.com/f/</Box> }}
                 helperText={slugLocked ? "The link can't change after publishing — it may already be on printed QR codes." : "Leave empty to use the title. Lowercase letters, numbers and hyphens."}
             />
