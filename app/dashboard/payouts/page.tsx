@@ -135,9 +135,9 @@ export default function PayoutsPage() {
     const connected = !!account;
     const active = account?.status === "active";
     const selfAcct = account?.status === "self";
-    // Fee comes from the API; fall back to the standard 2% while it is unset.
-    const feePct = feeBps ? (feeBps / 100).toFixed(feeBps % 100 ? 1 : 0) : "2";
-    const sharePct = feeBps ? ((10000 - feeBps) / 100).toFixed(feeBps % 100 ? 1 : 0) : "98";
+    // Fee comes from the API; fall back to the standard 5% while it is unset.
+    const feePct = feeBps ? (feeBps / 100).toFixed(feeBps % 100 ? 1 : 0) : "5";
+    const sharePct = feeBps ? ((10000 - feeBps) / 100).toFixed(feeBps % 100 ? 1 : 0) : "95";
 
     return (
         <Box>

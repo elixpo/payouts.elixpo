@@ -30,7 +30,7 @@ const SECTIONS: { tag: string; title: string; body: React.ReactNode }[] = [
         body: (
             <>
                 When a creator connects payouts, each payment is split by <strong>Razorpay Route</strong> straight to their
-                bank account, which Razorpay verifies through KYC; Elixpo Pay keeps a 2% platform fee. A fundraiser can only
+                bank account, which Razorpay verifies through KYC; Elixpo Pay keeps a 5% all-in fee that already covers Razorpay&apos;s gateway charges. A fundraiser can only
                 go public once its payouts are connected. Elixpo's own products and fundraisers settle to Elixpo's account.
             </>
         ),
@@ -119,7 +119,7 @@ const FLOWS: { id: string; title: string; policy: { href: string; label: string 
             { icon: "heart", title: "You choose an amount", body: "From ₹10. No account needed; your email is only for the receipt." },
             { icon: "shield", title: "Razorpay confirms", body: "Your card or UPI details never reach Elixpo." },
             { icon: "panda", title: "Recorded and receipted", body: "Counted exactly once; a receipt is emailed to you." },
-            { icon: "bank", title: "Reaches the creator", body: "Paid to their KYC-verified bank account, minus a 2% fee." },
+            { icon: "bank", title: "Reaches the creator", body: "Paid to their KYC-verified bank account, minus a 5% all-in fee." },
         ],
     },
     {
@@ -129,7 +129,7 @@ const FLOWS: { id: string; title: string; policy: { href: string; label: string 
         steps: [
             { icon: "bank", title: "Connect your bank", body: "Account holder, number and IFSC. We keep only the last 4 digits." },
             { icon: "shield", title: "Razorpay verifies you", body: "KYC through a Razorpay Route linked account." },
-            { icon: "split", title: "Every payment is split", body: "You get the amount minus Elixpo's 2% platform fee." },
+            { icon: "split", title: "Every payment is split", body: "You get the amount minus Elixpo's 5% all-in fee." },
             { icon: "check", title: "Settled to your bank", body: "By Razorpay, on its settlement schedule." },
         ],
     },
@@ -191,7 +191,7 @@ const START = [
 ];
 
 const COMMITMENTS = [
-    { title: "No hidden fees", body: "Buyers and supporters pay exactly the amount shown. Creators pay a flat 2% platform fee on payouts." },
+    { title: "No hidden fees", body: "Buyers and supporters pay exactly the amount shown. Creators pay one 5% all-in fee, gateway charges included. No setup, monthly or payout fees." },
     { title: "Exactly-once accounting", body: "A payment can never be counted twice, and every charge is written to a balanced ledger." },
     { title: "Policies at every step", body: "Wherever you pay or get paid, the terms, privacy, refund and email policies are one click away." },
     { title: "Open to inspection", body: "The code is public, so anyone can check that it does what this page says." },
@@ -306,7 +306,7 @@ export default function TrustPage() {
                 .trust h1 { font-size: clamp(2.6rem, 6.5vw, 5.2rem); max-width: 900px; }
                 .trust h1 em { font-family: var(--font-serif); font-weight: 400; }
                 .trust-lead { max-width: 620px; margin: 1.4rem 0 3rem; color: var(--app-fg-muted); font-size: 1.08rem; line-height: 1.7; }
-                .trust-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+                .trust-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.75rem; }
                 .trust-grid section { padding: 1.6rem; border: 1px solid var(--app-border); border-radius: var(--radius-card); background: var(--app-surface); }
                 .trust-grid h2 { margin: 0.6rem 0 0.6rem; font-size: 1.45rem; letter-spacing: -0.035em; line-height: 1.15; }
                 .trust-grid p, .trust-links { margin: 0; color: var(--app-fg-muted); line-height: 1.7; }

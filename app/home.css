@@ -4,7 +4,7 @@
 /* ── Hero ── */
 .pay-hero {
   position: relative; min-height: calc(100svh - 104px); margin-top: -90px;
-  padding: clamp(8rem, 16vh, 10.5rem) max(1.25rem, calc((100% - 1450px) / 2)) 3.5rem;
+  padding: clamp(7rem, 14vh, 9.5rem) max(1.25rem, calc((100% - 1450px) / 2)) clamp(5.5rem, 10vh, 7.5rem);
   overflow: hidden; display: flex; align-items: center; border-bottom: 1px solid var(--app-border);
 }
 .pay-hero-copy { position: relative; z-index: 2; width: 100%; }

@@ -14,7 +14,7 @@ export default function TermsPage() {
                 </>,
                 <>
                     Merchants and creators keep each payment minus a{" "}
-                    <strong>2% Elixpo platform fee</strong>, paid out by
+                    <strong>5% all-in Elixpo fee</strong> (which already includes the payment gateway charges), paid out by
                     Razorpay to a KYC-verified bank account.
                 </>,
                 <>
@@ -168,10 +168,14 @@ export default function TermsPage() {
 
             <h2>Fees</h2>
             <p>
-                Elixpo Pay charges a <strong>2% platform fee</strong> on each
-                payment that is paid out to a merchant or creator. The fees in
-                effect for your account are shown in your dashboard. Razorpay
-                may also charge its own processing fees.
+                Elixpo Pay charges a single <strong>5% all-in fee</strong> on each
+                payment that is paid out to a merchant or creator. It already
+                includes Razorpay&apos;s payment-gateway charges and GST on them,
+                so nothing else is deducted. There is no setup fee, monthly fee
+                or payout fee. Buyers and contributors pay exactly the amount
+                shown. The fee in effect for your account is shown in your
+                dashboard; we will give at least 30 days&apos; notice by email
+                before changing it.
             </p>
 
             <h2>Payouts</h2>
@@ -185,7 +189,7 @@ export default function TermsPage() {
                 </li>
                 <li>
                     Each payment is split by Razorpay Route: you receive the
-                    amount minus the 2% Elixpo platform fee, settled to your
+                    amount minus the 5% all-in Elixpo fee, settled to your
                     bank by Razorpay on its settlement schedule.
                 </li>
                 <li>

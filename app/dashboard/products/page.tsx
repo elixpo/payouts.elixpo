@@ -533,7 +533,7 @@ export default function ProductsPage() {
                     <Box component={Link} href="/dashboard/payouts" sx={{ color: "var(--app-fg)", fontWeight: 600 }}>
                         Payouts
                     </Box>
-                    : Razorpay splits each payment, you get the amount minus Elixpo&rsquo;s 2% platform fee.
+                    : Razorpay splits each payment, you get the amount minus Elixpo&rsquo;s 5% all-in fee (gateway charges included).
                 </Typography>
                 <PolicyLinks trust="buying" lead="Selling through Elixpo Pay is covered by the" style={{ marginTop: 10 }} />
             </GlassCard>

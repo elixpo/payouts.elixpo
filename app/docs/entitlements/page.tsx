@@ -8,6 +8,7 @@ import {
     DocList,
     DocP,
     DocTitle,
+    DocActions,
 } from "@/components/docs-prose";
 import CodeBlock from "../../components/code-block";
 
@@ -44,6 +45,7 @@ export default function EntitlementsDocs() {
                 Use it to gate features without trusting client state, or to
                 reconcile if a webhook was missed.
             </DocLead>
+            <DocActions actions={[{ label: "Create an app & get your secret key", href: "/dashboard/products", hint: "Dashboard → Products → New app. Shown once; roll it any time.", primary: true }]} />
 
             <DocH2>Request</DocH2>
             <CodeBlock code={REQ} language="http" />
