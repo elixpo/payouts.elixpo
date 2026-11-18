@@ -221,12 +221,27 @@ emails are sent.
 
 ### Running locally
 
-```bash
-npm install
-npm run dev
-```
+Follow these steps to set up and run Elixpo Pay locally:
 
-Then open [http://localhost:3000](http://localhost:3000).
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+2. **Copy the environment template:**
+   ```bash
+   cp .env.example .env.local
+   ```
+3. **Configure local secrets in `.env.local`:**
+   Fill in `ELIXPO_PAY_SESSION_SECRET` (generate with `openssl rand -hex 32`) and your Elixpo Accounts SSO credentials (`NEXT_PUBLIC_ELIXPO_CLIENT_ID`, `ELIXPO_CLIENT_SECRET`) to sign in locally.
+4. **Apply local database migrations:**
+   ```bash
+   npm run db:migrate:local
+   ```
+5. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+   Then open [http://localhost:3000](http://localhost:3000).
 
 Useful scripts (see `package.json` for the full list):
 
