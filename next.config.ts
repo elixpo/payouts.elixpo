@@ -26,6 +26,19 @@ const nextConfig: NextConfig = {
     eslint: {
         ignoreDuringBuilds: true,
     },
+    async headers() {
+        return [
+            {
+                source: "/f/:slug/embed",
+                headers: [
+                    {
+                        key: "Content-Security-Policy",
+                        value: "frame-ancestors *",
+                    },
+                ],
+            },
+        ];
+    },
 };
 
 export default nextConfig;
