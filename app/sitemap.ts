@@ -22,7 +22,7 @@ const ROUTES: Array<[string, number]> = [
     ["/terms", 0.4],
     ["/refunds", 0.4],
     ["/contact", 0.5],
-    ["/login", 0.3],
+    ["/trust", 0.7],
 ];
 
 export const runtime = "edge";

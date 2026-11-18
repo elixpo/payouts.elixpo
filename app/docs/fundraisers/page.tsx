@@ -97,7 +97,7 @@ export default function FundraisersDocs() {
                 </li>
                 <li>
                     <b>Razorpay →</b>
-                    <span>An RBI-licensed payment gateway confirms the payment.</span>
+                    <span>An RBI-regulated payment gateway confirms the payment.</span>
                 </li>
                 <li>
                     <b>Elixpo Pay →</b>

@@ -276,7 +276,7 @@ export default async function FundraiserPage({ params }: Params) {
                             </span>
                             <div>
                                 <b>Razorpay</b>
-                                <span>An RBI-licensed payment gateway confirms the payment.</span>
+                                <span>An RBI-regulated payment gateway confirms the payment.</span>
                             </div>
                         </li>
                         <li>
@@ -304,7 +304,7 @@ export default async function FundraiserPage({ params }: Params) {
                         </li>
                     </ol>
                     <div className="fr-badges">
-                        <span><Check /> RBI-licensed gateway</span>
+                        <span><Check /> RBI-regulated gateway</span>
                         {view.owner.verified && <span><Check /> KYC-verified recipient</span>}
                         <span><Check /> Receipt for every payment</span>
                         <span><Check /> Counted exactly once</span>
