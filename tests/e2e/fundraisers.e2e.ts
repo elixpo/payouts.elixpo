@@ -128,6 +128,7 @@ const confirm = await import("../../app/api/fundraisers/contributions/[id]/route
 const report = await import("../../app/api/fundraisers/[slug]/report/route.ts");
 const moderation = await import("../../app/api/dashboard/moderation/route.ts");
 const webhook = await import("../../app/api/webhooks/razorpay/route.ts");
+const badge = await import("../../app/f/[slug]/badge.svg/route.ts");
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 let failures = 0;
@@ -183,6 +184,16 @@ ok(f.slug === "build-the-first-oreo-badge-boards", "slug derived from the title"
 r = await call(pub.GET, "GET", `/api/fundraisers/${f.slug}`, { params: { slug: f.slug } });
 ok(r.status === 404, "draft is not public");
 
+let bResp = await badge.GET(new NextRequest(`${base}/f/${f.slug}/badge.svg`), { params: Promise.resolve({ slug: f.slug }) });
+let bSvg = await bResp.text();
+ok(bResp.status === 200 && (bResp.headers.get("content-type") || "").includes("image/svg+xml"), "draft badge returns svg");
+ok(bSvg.includes("Fundraiser") && !bSvg.includes("₹"), "non-public badge returns neutral Fundraiser without numbers");
+ok(/s-maxage=300/.test(bResp.headers.get("cache-control") || ""), "badge is cached with s-maxage=300");
+
+bResp = await badge.GET(new NextRequest(`${base}/f/missing-slug/badge.svg`), { params: Promise.resolve({ slug: "missing-slug" }) });
+bSvg = await bResp.text();
+ok(bSvg.includes("Fundraiser") && !bSvg.includes("₹"), "unknown slug returns neutral Fundraiser badge");
+
 r = await call(dash.POST, "POST", "/api/dashboard/fundraisers", { cookie: otherCookie, body: { title: "Other fund", goal_amount: 50000 } });
 const other = r.json.fundraiser;
 r = await call(dashOne.PATCH, "PATCH", `/api/dashboard/fundraisers/${other.id}`, { cookie: otherCookie, params: { id: other.id }, body: { action: "publish" } });
@@ -204,6 +215,10 @@ r = await call(pub.GET, "GET", `/api/fundraisers/${f.slug}`, { params: { slug: f
 ok(r.status === 200 && r.json.accepts_payments === true && r.json.owner.verified === true, "public page is live and verified", r.json);
 ok(!JSON.stringify(r.json).includes("mer_elixpo") && !JSON.stringify(r.json).includes("uid_owner"), "public view leaks no internal ids");
 ok(/s-maxage=10/.test(r.headers.get("cache-control") || ""), "public read is edge-cacheable");
+
+bResp = await badge.GET(new NextRequest(`${base}/f/${f.slug}/badge.svg`), { params: Promise.resolve({ slug: f.slug }) });
+bSvg = await bResp.text();
+ok(bResp.status === 200 && bSvg.includes("Support") && bSvg.includes("₹"), "live public badge shows support progress", bSvg);
 
 // ── 2. Contributions (test mode: no Razorpay configured) ──────────────────
 r = await call(contribute.POST, "POST", `/api/fundraisers/${f.slug}/contribute`, { params: { slug: f.slug }, body: { currency: "INR", amount: 500, email: "a@x.test" } });
