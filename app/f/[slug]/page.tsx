@@ -17,6 +17,7 @@ import HeartyBackground from "./hearty-background";
 import CoverCarousel from "./cover-carousel";
 import StickyContribute from "./sticky-contribute";
 import ContributeForm from "./contribute-form";
+import PolicyLinks from "@/components/trust/policy-links";
 import ReportLink from "./report-link";
 import "../fundraiser.css";
 
@@ -242,10 +243,10 @@ export default async function FundraiserPage({ params }: Params) {
                                 are processed by Razorpay through Elixpo Pay. A fundraiser is a donation, not a purchase:
                                 nothing is promised in return, and contributions are <strong>not tax-deductible</strong>.
                             </p>
-                            <p style={{ margin: "0.6rem 0 0" }}>
-                                See the <Link href="/refunds">refund policy</Link>. Something wrong with this page?{" "}
-                                <ReportLink slug={view.slug} />
+                            <p style={{ margin: "0.6rem 0 0.6rem" }}>
+                                Something wrong with this page? <ReportLink slug={view.slug} />
                             </p>
+                            <PolicyLinks trust="contributing" lead="Policies:" />
                         </div>
                     </section>
                 </div>
@@ -276,7 +277,7 @@ export default async function FundraiserPage({ params }: Params) {
                             </span>
                             <div>
                                 <b>Razorpay</b>
-                                <span>An RBI-licensed payment gateway confirms the payment.</span>
+                                <span>An RBI-regulated payment gateway confirms the payment.</span>
                             </div>
                         </li>
                         <li>
@@ -304,7 +305,7 @@ export default async function FundraiserPage({ params }: Params) {
                         </li>
                     </ol>
                     <div className="fr-badges">
-                        <span><Check /> RBI-licensed gateway</span>
+                        <span><Check /> RBI-regulated gateway</span>
                         {view.owner.verified && <span><Check /> KYC-verified recipient</span>}
                         <span><Check /> Receipt for every payment</span>
                         <span><Check /> Counted exactly once</span>

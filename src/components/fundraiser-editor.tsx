@@ -7,6 +7,7 @@ import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import { Box, Button, CircularProgress, FormControlLabel, IconButton, InputAdornment, Stack, Switch, TextField, Typography } from "@mui/material";
 import { useEffect, useMemo, useRef, useState } from "react";
+import PolicyLinks from "@/components/trust/policy-links";
 
 type Cur = "INR" | "USD";
 
@@ -617,10 +618,13 @@ export default function FundraiserEditor({
                     <Typography sx={{ mt: 0.8, fontSize: "0.78rem", color: "var(--app-fg-muted)" }}>{blockers[0]}</Typography>
                 )}
             </Box>
-            <Typography sx={{ color: "var(--app-fg-faint)", fontSize: "0.78rem" }}>
-                A fundraiser is a donation page: you can't promise goods in return. To sell something (like a pre-order),
-                use a product checkout instead.
-            </Typography>
+            <Box>
+                <Typography sx={{ color: "var(--app-fg-faint)", fontSize: "0.78rem" }}>
+                    A fundraiser is a donation page: you can't promise goods in return. To sell something (like a pre-order),
+                    use a product checkout instead.
+                </Typography>
+                <PolicyLinks trust="contributing" lead="By publishing you agree to the" style={{ marginTop: 6 }} />
+            </Box>
         </Stack>
     );
 }

@@ -5,6 +5,7 @@ export const runtime = "edge";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
+import PolicyLinks from "@/components/trust/policy-links";
 import PageShell from "../../../components/page-shell";
 import HeartyBackground, { HEART, SPARK } from "../hearty-background";
 import "../../fundraiser.css";
@@ -230,6 +231,7 @@ function Thanks() {
                 <div className="actions">
                     <Link href={`/f/${slug}`}>See the progress</Link>
                 </div>
+                <PolicyLinks trust="contributing" lead="Your receipt is covered by our" align="center" style={{ marginTop: "2rem" }} />
             </div>
         );
     }

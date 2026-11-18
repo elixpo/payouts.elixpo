@@ -25,9 +25,11 @@ const COLUMNS: { title: string; links: { label: string; href: string; external?:
         title: "Company",
         links: [
             { label: "Contact", href: "/contact" },
+            { label: "Trust & safety", href: "/trust" },
             { label: "Privacy", href: "/privacy" },
             { label: "Terms", href: "/terms" },
             { label: "Refunds", href: "/refunds" },
+            { label: "Email policy", href: "/email-policy" },
         ],
     },
 ];

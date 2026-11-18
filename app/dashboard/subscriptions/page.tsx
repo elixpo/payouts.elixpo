@@ -13,6 +13,8 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { formatMoney, GlassCard } from "@/components/dashboard-ui";
+import FlowDiagram from "@/components/trust/flow-diagram";
+import PolicyLinks from "@/components/trust/policy-links";
 
 const SYMBOLS: Record<string, string> = {
     INR: "₹",
@@ -291,6 +293,50 @@ export default function SubscriptionsPage() {
                     ))}
                 </Stack>
             )}
+
+            <GlassCard sx={{ mt: 3 }}>
+                <Typography
+                    component="h2"
+                    sx={{ fontWeight: 700, fontSize: "1rem", mb: 0.6, color: "var(--app-fg)" }}
+                >
+                    Cancelling auto-pay
+                </Typography>
+                <Typography
+                    sx={{
+                        color: "var(--app-fg-muted)",
+                        fontSize: "0.86rem",
+                        lineHeight: 1.6,
+                        mb: 2.5,
+                    }}
+                >
+                    Auto-pay plans run on a UPI AutoPay or card e-mandate under RBI rules, processed by Razorpay, an RBI-regulated payment gateway. You can cancel any time: future renewals stop, and you keep access until the end of the period you already paid for.
+                </Typography>
+                <FlowDiagram
+                    compact
+                    title="What happens when you cancel"
+                    steps={[
+                        {
+                            icon: "key",
+                            title: "You cancel",
+                            body: "Whenever you like, at any point in the period.",
+                        },
+                        {
+                            icon: "shield",
+                            title: "Renewals stop",
+                            body: "No further auto-pay charges.",
+                        },
+                        {
+                            icon: "check",
+                            title: "Access continues",
+                            body: "Until the end of the period you paid for.",
+                        },
+                    ]}
+                />
+                <PolicyLinks trust="buying"
+                    lead="See our"
+                    style={{ marginTop: "1.5rem" }}
+                />
+            </GlassCard>
         </Box>
     );
 }

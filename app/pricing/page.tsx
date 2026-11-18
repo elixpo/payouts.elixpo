@@ -3,6 +3,8 @@
 import CheckIcon from "@mui/icons-material/Check";
 import { Box, Button, Container, Stack, Typography } from "@mui/material";
 import Link from "next/link";
+import FlowDiagram from "@/components/trust/flow-diagram";
+import PolicyLinks from "@/components/trust/policy-links";
 import PageShell from "../components/page-shell";
 
 interface Tier {
@@ -416,6 +418,75 @@ export default function PricingPage() {
                     >
                         Network provider merchant account fees (charged directly by Stripe or Razorpay) are billed separately. Local goods and services tax (GST) is applied to processing charges in accordance with regional regulations.
                     </Typography>
+                </Box>
+
+                {/* How payments work */}
+                <Box
+                    component="section"
+                    aria-labelledby="how-payments-work"
+                    sx={{
+                        p: { xs: 3, md: 5 },
+                        borderRadius: "var(--radius-card)",
+                        background: "var(--app-bg-2)",
+                        border: "1.5px solid var(--app-overlay)",
+                        mb: 6,
+                    }}
+                >
+                    <Typography
+                        id="how-payments-work"
+                        variant="h3"
+                        sx={{
+                            fontWeight: 500,
+                            fontSize: "22px",
+                            mb: 1,
+                            color: "var(--app-fg)",
+                            letterSpacing: "-0.035em",
+                            fontFamily: "var(--font-sofia-sans)",
+                        }}
+                    >
+                        How payments work
+                    </Typography>
+                    <Typography
+                        sx={{
+                            color: "var(--app-fg-muted)",
+                            fontSize: "14px",
+                            lineHeight: 1.6,
+                            mb: 4,
+                            maxWidth: 640,
+                            fontFamily: "var(--font-sofia-sans)",
+                        }}
+                    >
+                        Payments are processed by Razorpay, an RBI-regulated payment gateway. Card and UPI details are entered on Razorpay's checkout and never reach Elixpo or your app.
+                    </Typography>
+                    <FlowDiagram
+                        title="How payments work"
+                        steps={[
+                            {
+                                icon: "app",
+                                title: "Your app",
+                                body: "Sends the buyer to Elixpo Pay's hosted checkout.",
+                            },
+                            {
+                                icon: "phone",
+                                title: "Buyer pays",
+                                body: "On Razorpay with UPI, cards or netbanking.",
+                            },
+                            {
+                                icon: "key",
+                                title: "Signed webhook",
+                                body: "Elixpo Pay records the payment once and notifies your app.",
+                            },
+                            {
+                                icon: "bank",
+                                title: "Access and payouts",
+                                body: "The buyer's access unlocks; your earnings are paid out to your bank.",
+                            },
+                        ]}
+                    />
+                    <PolicyLinks trust="buying"
+                        lead="Policies that apply to every payment:"
+                        style={{ marginTop: "2rem", fontFamily: "var(--font-sofia-sans)" }}
+                    />
                 </Box>
 
                 {/* Bottom Assistance Link */}

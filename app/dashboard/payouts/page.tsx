@@ -16,6 +16,8 @@ import {
 import { useEffect, useState } from "react";
 import ConfirmDialog from "@/components/confirm-dialog";
 import { formatMoney, GlassCard } from "@/components/dashboard-ui";
+import FlowDiagram from "@/components/trust/flow-diagram";
+import PolicyLinks from "@/components/trust/policy-links";
 
 const field = {
     "& .MuiOutlinedInput-root": {
@@ -133,6 +135,9 @@ export default function PayoutsPage() {
     const connected = !!account;
     const active = account?.status === "active";
     const selfAcct = account?.status === "self";
+    // Fee comes from the API; fall back to the standard 2% while it is unset.
+    const feePct = feeBps ? (feeBps / 100).toFixed(feeBps % 100 ? 1 : 0) : "2";
+    const sharePct = feeBps ? ((10000 - feeBps) / 100).toFixed(feeBps % 100 ? 1 : 0) : "98";
 
     return (
         <Box>
@@ -283,6 +288,32 @@ export default function PayoutsPage() {
                     )}
                     {err && <Typography sx={{ color: "var(--app-danger)", fontSize: "0.82rem" }}>{err}</Typography>}
                 </Stack>
+                <PolicyLinks trust="payouts" lead="By connecting payouts you agree to the" style={{ marginTop: 14 }} />
+            </GlassCard>
+
+            {/* How payouts work (secondary) */}
+            <GlassCard sx={{ mt: 2, p: { xs: 2, md: 2.5 } }}>
+                <Typography sx={{ ...labelSx, mb: 1.8 }}>How payouts work</Typography>
+                <FlowDiagram
+                    compact
+                    title="How payouts work"
+                    steps={[
+                        { icon: "phone", title: "Someone pays", body: "A buyer or supporter pays on Elixpo Pay checkout." },
+                        { icon: "shield", title: "Razorpay", body: "Processed by Razorpay, an RBI-regulated payment gateway." },
+                        { icon: "split", title: "Route split", body: `${sharePct}% to you, ${feePct}% Elixpo platform fee.` },
+                        { icon: "bank", title: "Your bank", body: "Razorpay settles your share on its settlement schedule." },
+                    ]}
+                />
+                <Box component="ul" sx={{ m: 0, mt: 2, pl: 2.2, color: "var(--app-fg-muted)", fontSize: "0.8rem", lineHeight: 1.6, "& li + li": { mt: 0.4 } }}>
+                    <li>
+                        When you connect, we create a Razorpay Route linked account for you. Razorpay
+                        runs the KYC checks; payouts switch on once it is verified.
+                    </li>
+                    <li>
+                        Your full account number is sent to Razorpay to create that account and is not
+                        stored by Elixpo. We keep only the last 4 digits, the IFSC and the holder name, for display.
+                    </li>
+                </Box>
             </GlassCard>
 
             {/* Routable revenue */}

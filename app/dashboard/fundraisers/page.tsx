@@ -8,6 +8,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { formatMoney, GlassCard } from "@/components/dashboard-ui";
 import FundraiserStatusChip from "@/components/fundraiser-status";
+import FlowDiagram from "@/components/trust/flow-diagram";
+import PolicyLinks from "@/components/trust/policy-links";
 import FundraiserEditor, { EMPTY_DRAFT, type FundraiserDraft, toPayload } from "@/components/fundraiser-editor";
 
 export default function FundraisersPage() {
@@ -115,6 +117,38 @@ export default function FundraisersPage() {
                     })}
                 </Stack>
             )}
+
+            {/* How fundraisers work (secondary) */}
+            <GlassCard sx={{ mt: 3, p: { xs: 2, md: 2.5 } }}>
+                <Typography
+                    sx={{
+                        fontSize: "0.7rem",
+                        color: "var(--app-fg-faint)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.14em",
+                        fontFamily: "var(--font-geist-mono)",
+                        mb: 1.8,
+                    }}
+                >
+                    How fundraisers work
+                </Typography>
+                <FlowDiagram
+                    compact
+                    title="How fundraisers work"
+                    steps={[
+                        { icon: "heart", title: "Create", body: "Write your page as a draft." },
+                        { icon: "bank", title: "Connect payouts", body: "Required before you can publish." },
+                        { icon: "phone", title: "Publish & share", body: "Share the link or QR. Supporters pay by UPI or card and get an email receipt." },
+                        { icon: "check", title: "Money reaches your bank", body: "Via Razorpay Route, minus Elixpo's 2% platform fee." },
+                    ]}
+                />
+                <Typography sx={{ color: "var(--app-fg-muted)", fontSize: "0.8rem", lineHeight: 1.6, mt: 2 }}>
+                    Contributions are donations: don&rsquo;t promise goods in return, and say honestly how
+                    the money will be used. Contributions are not tax-deductible. Anyone can report a page,
+                    and Elixpo can hold or unpublish it.
+                </Typography>
+                <PolicyLinks trust="contributing" lead="Fundraisers are covered by the" style={{ marginTop: 10 }} />
+            </GlassCard>
         </Box>
     );
 }

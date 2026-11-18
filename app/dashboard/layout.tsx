@@ -15,6 +15,7 @@ import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import SpaceDashboardIcon from "@mui/icons-material/SpaceDashboard";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import GavelIcon from "@mui/icons-material/Gavel";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
 import WebhookIcon from "@mui/icons-material/Webhook";
 import {
@@ -52,6 +53,7 @@ const MORE_NAV = [
     { label: "Transactions", icon: ReceiptLongIcon, href: "/dashboard/transactions", hint: "Every charge across your apps" },
     { label: "Webhooks", icon: WebhookIcon, href: "/dashboard/webhooks", hint: "Endpoints and delivery logs" },
     { label: "My subscriptions", icon: CardMembershipIcon, href: "/dashboard/subscriptions", hint: "Plans you pay for" },
+    { label: "Trust & policies", icon: VerifiedUserIcon, href: "/trust", hint: "How payments and payouts work" },
 ];
 
 interface Me {
@@ -533,6 +535,12 @@ export default function DashboardLayout({
                                     icon={<MenuBookIcon fontSize="small" />}
                                     label="Documentation"
                                     href="/docs"
+                                    onClick={() => setAnchorEl(null)}
+                                />
+                                <AccountItem
+                                    icon={<VerifiedUserIcon fontSize="small" />}
+                                    label="Trust & policies"
+                                    href="/trust"
                                     onClick={() => setAnchorEl(null)}
                                 />
                                 <AccountItem

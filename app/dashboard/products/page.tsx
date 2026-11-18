@@ -25,6 +25,8 @@ import {
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { formatMoney, GlassCard } from "@/components/dashboard-ui";
+import FlowDiagram from "@/components/trust/flow-diagram";
+import PolicyLinks from "@/components/trust/policy-links";
 
 export default function ProductsPage() {
     const [loading, setLoading] = useState(true);
@@ -501,6 +503,40 @@ export default function ProductsPage() {
                     })}
                 </Stack>
             )}
+
+            {/* How it works (secondary) */}
+            <GlassCard sx={{ mt: 3, p: { xs: 2, md: 2.5 } }}>
+                <Typography
+                    sx={{
+                        fontSize: "0.7rem",
+                        color: "var(--app-fg-faint)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.14em",
+                        fontFamily: "var(--font-geist-mono)",
+                        mb: 1.8,
+                    }}
+                >
+                    How it works
+                </Typography>
+                <FlowDiagram
+                    compact
+                    title="How selling through Elixpo Pay works"
+                    steps={[
+                        { icon: "key", title: "Register", body: "Register your app and get its secret key." },
+                        { icon: "code", title: "Integrate", body: "Sync prices from code; your server creates checkout sessions." },
+                        { icon: "phone", title: "Buyer pays", body: "On Elixpo Pay's hosted checkout, processed by Razorpay." },
+                        { icon: "check", title: "Unlock access", body: "We send your app a signed entitlement.updated webhook." },
+                    ]}
+                />
+                <Typography sx={{ color: "var(--app-fg-muted)", fontSize: "0.8rem", lineHeight: 1.6, mt: 2 }}>
+                    Revenue reaches your bank through{" "}
+                    <Box component={Link} href="/dashboard/payouts" sx={{ color: "var(--app-fg)", fontWeight: 600 }}>
+                        Payouts
+                    </Box>
+                    : Razorpay splits each payment, you get the amount minus Elixpo&rsquo;s 2% platform fee.
+                </Typography>
+                <PolicyLinks trust="buying" lead="Selling through Elixpo Pay is covered by the" style={{ marginTop: 10 }} />
+            </GlassCard>
 
             <Stack alignItems="center" sx={{ mt: 4 }}>
                 <Button
