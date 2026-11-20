@@ -326,6 +326,13 @@ export default function FundraiserDetail() {
                                 <ContentCopyIcon fontSize="small" />
                             </IconButton>
                         </Stack>
+                        <Typography sx={{ ...label, mt: 1.6, mb: 0.8 }}>Live README badge</Typography>
+                        <Stack direction="row" spacing={1} alignItems="center" sx={{ p: 1, pl: 1.4, borderRadius: "12px", background: "var(--app-surface-2)", mb: 1.4 }}>
+                            <Box sx={{ flex: 1, minWidth: 0, fontFamily: "var(--font-geist-mono)", fontSize: "0.76rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{`![Support](${origin}/f/${f.slug}/badge.svg)`}</Box>
+                            <IconButton size="small" aria-label="Copy badge markdown" onClick={() => navigator.clipboard?.writeText(`![Support](${origin}/f/${f.slug}/badge.svg)`).then(() => setMsg({ ok: true, text: "Badge Markdown copied." }))}>
+                                <ContentCopyIcon fontSize="small" />
+                            </IconButton>
+                        </Stack>
                         <Stack spacing={1}>
                             <Button onClick={() => setShareOpen(true)} disabled={!shareable} startIcon={<IosShareIcon />} sx={{ ...ink, justifyContent: "center" }}>
                                 Share with a message
