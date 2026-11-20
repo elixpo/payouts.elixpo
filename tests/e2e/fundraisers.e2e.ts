@@ -128,6 +128,7 @@ const confirm = await import("../../app/api/fundraisers/contributions/[id]/route
 const report = await import("../../app/api/fundraisers/[slug]/report/route.ts");
 const moderation = await import("../../app/api/dashboard/moderation/route.ts");
 const webhook = await import("../../app/api/webhooks/razorpay/route.ts");
+const embed = await import("../../app/f/[slug]/embed/route.ts");
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 let failures = 0;
@@ -183,6 +184,15 @@ ok(f.slug === "build-the-first-falera-badge-boards", "slug derived from the titl
 r = await call(pub.GET, "GET", `/api/fundraisers/${f.slug}`, { params: { slug: f.slug } });
 ok(r.status === 404, "draft is not public");
 
+let eResp = await embed.GET(new NextRequest(`${base}/f/${f.slug}/embed`), { params: Promise.resolve({ slug: f.slug }) });
+let eHtml = await eResp.text();
+ok(eResp.status === 200 && eHtml.includes("Fundraiser Unavailable"), "draft embed returns neutral unavailable card");
+ok(eResp.headers.get("content-security-policy")?.includes("frame-ancestors *"), "draft embed sets frame-ancestors *");
+
+eResp = await embed.GET(new NextRequest(`${base}/f/missing-slug/embed`), { params: Promise.resolve({ slug: "missing-slug" }) });
+eHtml = await eResp.text();
+ok(eResp.status === 200 && eHtml.includes("Fundraiser Unavailable"), "missing slug embed returns unavailable card");
+
 r = await call(dash.POST, "POST", "/api/dashboard/fundraisers", { cookie: otherCookie, body: { title: "Other fund", goal_amount: 50000 } });
 const other = r.json.fundraiser;
 r = await call(dashOne.PATCH, "PATCH", `/api/dashboard/fundraisers/${other.id}`, { cookie: otherCookie, params: { id: other.id }, body: { action: "publish" } });
@@ -204,6 +214,16 @@ r = await call(pub.GET, "GET", `/api/fundraisers/${f.slug}`, { params: { slug: f
 ok(r.status === 200 && r.json.accepts_payments === true && r.json.owner.verified === true, "public page is live and verified", r.json);
 ok(!JSON.stringify(r.json).includes("mer_elixpo") && !JSON.stringify(r.json).includes("uid_owner"), "public view leaks no internal ids");
 ok(/s-maxage=10/.test(r.headers.get("cache-control") || ""), "public read is edge-cacheable");
+
+eResp = await embed.GET(new NextRequest(`${base}/f/${f.slug}/embed`), { params: Promise.resolve({ slug: f.slug }) });
+eHtml = await eResp.text();
+ok(eResp.status === 200 && eHtml.includes("Contribute") && eHtml.includes("Build the first Oreo badge boards"), "live embed shows title, progress and Contribute button");
+ok(eResp.headers.get("content-security-policy")?.includes("frame-ancestors *"), "live embed allows framing from any origin");
+ok(eHtml.includes("target=\"_blank\""), "contribute button opens in new tab");
+
+eResp = await embed.GET(new NextRequest(`${base}/f/${f.slug}/embed?theme=dark`), { params: Promise.resolve({ slug: f.slug }) });
+eHtml = await eResp.text();
+ok(eHtml.includes("theme-dark"), "embed supports ?theme=dark");
 
 // ── 2. Contributions (test mode: no Razorpay configured) ──────────────────
 r = await call(contribute.POST, "POST", `/api/fundraisers/${f.slug}/contribute`, { params: { slug: f.slug }, body: { currency: "INR", amount: 500, email: "a@x.test" } });

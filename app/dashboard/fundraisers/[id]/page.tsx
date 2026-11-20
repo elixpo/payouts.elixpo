@@ -326,6 +326,13 @@ export default function FundraiserDetail() {
                                 <ContentCopyIcon fontSize="small" />
                             </IconButton>
                         </Stack>
+                        <Typography sx={{ ...label, mt: 1.6, mb: 0.8 }}>Embed card (iframe)</Typography>
+                        <Stack direction="row" spacing={1} alignItems="center" sx={{ p: 1, pl: 1.4, borderRadius: "12px", background: "var(--app-surface-2)", mb: 1.4 }}>
+                            <Box sx={{ flex: 1, minWidth: 0, fontFamily: "var(--font-geist-mono)", fontSize: "0.76rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{`<iframe src="${origin}/f/${f.slug}/embed" width="360" height="220" frameborder="0"></iframe>`}</Box>
+                            <IconButton size="small" aria-label="Copy embed snippet" onClick={() => navigator.clipboard?.writeText(`<iframe src="${origin}/f/${f.slug}/embed" width="360" height="220" frameborder="0"></iframe>`).then(() => setMsg({ ok: true, text: "Embed snippet copied." }))}>
+                                <ContentCopyIcon fontSize="small" />
+                            </IconButton>
+                        </Stack>
                         <Stack spacing={1}>
                             <Button onClick={() => setShareOpen(true)} disabled={!shareable} startIcon={<IosShareIcon />} sx={{ ...ink, justifyContent: "center" }}>
                                 Share with a message
