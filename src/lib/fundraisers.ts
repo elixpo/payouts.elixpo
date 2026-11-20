@@ -339,11 +339,15 @@ export async function recentSupporters(db: D1Database, fundraiserId: string, lim
     }));
 }
 
+/** Supporters listed on the public page and API: all of them for a typical
+ * fundraiser, capped so one with thousands stays a small response. */
+const PUBLIC_SUPPORTERS = 100;
+
 /** What the public page / API may see — never owner ids or contributor emails. */
 export async function publicView(db: D1Database, row: FundraiserRow) {
     const [totals, supporters, readiness, fx, popular] = await Promise.all([
         getTotals(db, row.id),
-        recentSupporters(db, row.id),
+        recentSupporters(db, row.id, PUBLIC_SUPPORTERS),
         payoutReadiness(db, row.merchant_id),
         getUsdInrRate(),
         mostChosen(db, row.id),
