@@ -53,9 +53,10 @@ export async function POST(request: NextRequest) {
     const body: any = await request.json().catch(() => ({}));
     const id = String(body?.fundraiser_id || "");
     const note = String(body?.note || "").trim().slice(0, 500) || null;
-    const f = (await ctx.db.prepare("SELECT id, status FROM fundraisers WHERE id = ?").bind(id).first()) as {
+    const f = (await ctx.db.prepare("SELECT id, status, moderation_note FROM fundraisers WHERE id = ?").bind(id).first()) as {
         id: string;
         status: string;
+        moderation_note: string | null;
     } | null;
     if (!f) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
@@ -76,12 +77,23 @@ export async function POST(request: NextRequest) {
             );
             break;
         case "restore":
-            if (f.status !== "held") return NextResponse.json({ error: "not_held" }, { status: 409 });
-            stmts.push(
-                ctx.db
-                    .prepare("UPDATE fundraisers SET status = 'closed', moderation_note = NULL, updated_at = datetime('now') WHERE id = ?")
-                    .bind(id),
-            );
+            if (f.status === "held") {
+                // Back as closed: the owner decides when to re-publish.
+                stmts.push(
+                    ctx.db
+                        .prepare("UPDATE fundraisers SET status = 'closed', moderation_note = NULL, updated_at = datetime('now') WHERE id = ?")
+                        .bind(id),
+                );
+            } else if (f.status === "draft" && f.moderation_note) {
+                // Lift a moderation unpublish: the owner may publish again.
+                stmts.push(
+                    ctx.db
+                        .prepare("UPDATE fundraisers SET moderation_note = NULL, updated_at = datetime('now') WHERE id = ?")
+                        .bind(id),
+                );
+            } else {
+                return NextResponse.json({ error: "not_moderated" }, { status: 409 });
+            }
             break;
         case "resolve":
             break;

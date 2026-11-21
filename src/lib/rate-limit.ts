@@ -1,15 +1,16 @@
 /**
- * Small KV-backed fixed-window rate limiter.
+ * Exact fixed-window rate limiter backed by D1.
  *
- * Each (bucket, id) pair gets one counter per window, keyed by the window index
- * so it rolls over on its own and expires via TTL. KV is eventually consistent,
- * so this is a coarse abuse guard (a burst across PoPs can slip a few extra
- * requests through), not an exact quota.
+ * Each (bucket, id) pair gets one row per window. The count is incremented with
+ * a single atomic upsert (`INSERT … ON CONFLICT DO UPDATE … RETURNING`), and D1
+ * serialises writes on its primary, so the limit is exact even under bursts.
+ * Expired rows are swept by the hourly cron (pruneRateLimits).
  *
- * Fails OPEN: if KV is unavailable or errors, the request is allowed.
+ * Fails OPEN: if the database errors (e.g. the migration hasn't been applied),
+ * the request is allowed and the error is logged.
  */
 
-import { getKV } from "./kv";
+import { getDatabase } from "./d1-client";
 
 export interface RateLimitResult {
     allowed: boolean;
@@ -24,18 +25,38 @@ export async function rateLimit(
     windowSeconds: number,
 ): Promise<RateLimitResult> {
     try {
-        const kv = await getKV();
-        const window = Math.floor(Date.now() / 1000 / windowSeconds);
-        const key = `rl:${bucket}:${id}:${window}`;
-        const current = Number.parseInt((await kv.get(key)) ?? "0", 10) || 0;
-        if (current >= limit) return { allowed: false, count: current, limit };
-        // KV's minimum TTL is 60 seconds.
-        await kv.put(key, String(current + 1), {
-            expirationTtl: Math.max(60, windowSeconds),
-        });
-        return { allowed: true, count: current + 1, limit };
-    } catch {
+        const db = await getDatabase();
+        const now = Math.floor(Date.now() / 1000);
+        const window = Math.floor(now / windowSeconds);
+        const key = `${bucket}:${id}:${window}`;
+        const expiresAt = (window + 1) * windowSeconds;
+        const row = (await db
+            .prepare(
+                `INSERT INTO rate_limits (key, count, expires_at) VALUES (?, 1, ?)
+                 ON CONFLICT(key) DO UPDATE SET count = count + 1
+                 RETURNING count`,
+            )
+            .bind(key, expiresAt)
+            .first()) as { count: number } | null;
+        const count = Number(row?.count ?? 1);
+        return { allowed: count <= limit, count, limit };
+    } catch (err) {
+        console.error("[rate-limit] %s check failed, allowing:", bucket, err);
         return { allowed: true, count: 0, limit };
+    }
+}
+
+/** Delete expired windows. Called from the hourly cron. */
+export async function pruneRateLimits(): Promise<number> {
+    try {
+        const db = await getDatabase();
+        const res = await db
+            .prepare("DELETE FROM rate_limits WHERE expires_at < ?")
+            .bind(Math.floor(Date.now() / 1000))
+            .run();
+        return Number(res.meta?.changes ?? 0);
+    } catch {
+        return 0;
     }
 }
 

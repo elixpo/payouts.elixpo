@@ -363,6 +363,33 @@ await call(moderation.POST, "POST", "/api/dashboard/moderation", { cookie: owner
 r = await call(dashOne.GET, "GET", `/api/dashboard/fundraisers/${f.id}`, { cookie: ownerCookie, params: { id: f.id } });
 ok(r.json.fundraiser.status === "closed", "admin restore → closed (owner can re-open)");
 
+// Moderation unpublish is sticky until an admin restores it.
+await call(dashOne.PATCH, "PATCH", `/api/dashboard/fundraisers/${f.id}`, { cookie: ownerCookie, params: { id: f.id }, body: { action: "publish" } });
+await call(moderation.POST, "POST", "/api/dashboard/moderation", { cookie: ownerCookie, body: { fundraiser_id: f.id, action: "unpublish", note: "misleading" } });
+r = await call(dashOne.PATCH, "PATCH", `/api/dashboard/fundraisers/${f.id}`, { cookie: ownerCookie, params: { id: f.id }, body: { action: "publish" } });
+ok(r.status === 409 && r.json.error === "unpublished_by_moderation", "owner can't re-publish a page moderation unpublished", r.json);
+r = await call(dashOne.PATCH, "PATCH", `/api/dashboard/fundraisers/${f.id}`, { cookie: ownerCookie, params: { id: f.id }, body: { title: f.title } });
+ok(r.status === 200, "owner can still edit it", r.json);
+await call(moderation.POST, "POST", "/api/dashboard/moderation", { cookie: ownerCookie, body: { fundraiser_id: f.id, action: "restore" } });
+r = await call(dashOne.PATCH, "PATCH", `/api/dashboard/fundraisers/${f.id}`, { cookie: ownerCookie, params: { id: f.id }, body: { action: "publish" } });
+ok(r.status === 200 && r.json.fundraiser.status === "live", "after admin restore the owner can publish again", r.json);
+
+// Rate limits are exact: the 6th report from one IP within the hour is refused.
+{
+    const statuses: number[] = [];
+    for (let i = 0; i < 6; i++) {
+        const rr = await call(report.POST, "POST", `/api/fundraisers/${f.slug}/report`, { params: { slug: f.slug }, headers: { "cf-connecting-ip": "203.0.113.7" }, body: { reason: "scam", details: `burst ${i}` } });
+        statuses.push(rr.status);
+    }
+    ok(statuses.slice(0, 5).every((x) => x === 200) && statuses[5] === 429, "report rate limit is exact (5 per IP per hour)", statuses);
+    const burst = await Promise.all(
+        Array.from({ length: 8 }, (_, i) =>
+            call(report.POST, "POST", `/api/fundraisers/${f.slug}/report`, { params: { slug: f.slug }, headers: { "cf-connecting-ip": "203.0.113.8" }, body: { reason: "scam", details: `parallel ${i}` } }),
+        ),
+    );
+    ok(burst.filter((x) => x.status === 200).length === 5, "concurrent burst can't exceed the limit", burst.map((x) => x.status));
+}
+
 // ── 5b. Delete ─────────────────────────────────────────────────────────
 r = await call(dashOne.DELETE, "DELETE", `/api/dashboard/fundraisers/${other.id}`, { cookie: ownerCookie, params: { id: other.id } });
 ok(r.status === 404, "can't delete another merchant's fundraiser", r.json);

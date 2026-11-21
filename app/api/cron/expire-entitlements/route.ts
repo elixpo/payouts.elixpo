@@ -10,6 +10,7 @@ import {
 } from "@/lib/entitlements";
 import { getEnv } from "@/lib/env";
 import { retryContributionEmails } from "@/lib/fundraisers";
+import { pruneRateLimits } from "@/lib/rate-limit";
 import { notifyBuyer } from "@/lib/mail-notify";
 import { getWebhookEndpoint } from "@/lib/repo";
 import { fireEntitlementUpdated } from "@/lib/webhooks";
@@ -119,10 +120,12 @@ async function handle(request: NextRequest) {
 
     // Also re-send any fundraiser receipts that never went out.
     const receipts = await retryContributionEmails(db);
+    const rateLimitRowsPruned = await pruneRateLimits();
 
     return NextResponse.json({
         ok: true,
         receipts,
+        rate_limit_rows_pruned: rateLimitRowsPruned,
         scanned: rows.length,
         expired,
         notified,

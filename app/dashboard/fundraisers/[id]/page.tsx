@@ -225,7 +225,12 @@ export default function FundraiserDetail() {
             </Stack>
 
             {f.status === "held" && <Alert severity="warning" sx={{ mb: 2 }}>{f.moderation_note || "This page is held for review."} Contact hello@elixpo.com to restore it.</Alert>}
-            {f.status === "draft" && f.moderation_note && <Alert severity="warning" sx={{ mb: 2 }}>{f.moderation_note}</Alert>}
+            {f.status === "draft" && f.moderation_note && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                    {f.moderation_note} You can edit this page, but it can't be published again until Elixpo reviews it. Write
+                    to hello@elixpo.com.
+                </Alert>
+            )}
             {!deleted && !f.payout_ready && f.status !== "held" && (
                 <Alert severity="info" sx={{ mb: 2 }} action={<Button component={Link} href="/dashboard/payouts" sx={{ textTransform: "none", fontWeight: 700 }}>Connect payouts</Button>}>
                     {f.payout_reason} A fundraiser can go public only once contributions can reach you.

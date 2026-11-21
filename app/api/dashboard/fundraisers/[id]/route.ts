@@ -107,6 +107,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
                 { status: 409 },
             );
         }
+        // Unpublished by moderation: stays down until an admin restores it.
+        if (row.status === "draft" && row.moderation_note) {
+            return NextResponse.json(
+                {
+                    error: "unpublished_by_moderation",
+                    error_description:
+                        "Elixpo moderation unpublished this page. You can edit it, but it can't go live again until we review it. Write to hello@elixpo.com.",
+                },
+                { status: 409 },
+            );
+        }
         const readiness = await payoutReadiness(ctx.db, ctx.merchantId);
         if (!readiness.ready) {
             return NextResponse.json({ error: "payouts_required", error_description: readiness.reason }, { status: 409 });

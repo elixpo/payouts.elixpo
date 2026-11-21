@@ -31,12 +31,13 @@ below), and the owner confirmed both.
 | Test payments | Local `next dev` points at the production D1, so test paths could mark payments paid and grant access in live data | `testPaymentsAllowed()` is false whenever the database is production |
 | Legacy handoff | The checkout amount came from the signed token, not the catalog | The catalog price is always used |
 | Metadata | Caller metadata could overwrite `plan` and `source` | System keys are applied last |
-| Abuse | No rate limits on contributions or reports, and every report emailed the admin | KV per-IP and per-page limits. The admin is emailed only for a page's first open report |
+| Abuse | No rate limits on contributions or reports, and every report emailed the admin | Exact per-IP and per-page limits using an atomic D1 upsert (`rate_limits`), tested with a concurrent burst. The admin is emailed only for a page's first open report |
 | Sessions | Stateless cookies couldn't be revoked, so logout and account removal left them valid for up to 15 days | KV revocation checked in `requireDashboard`. Logout and the Accounts revoke webhook end all sessions. GET logout no longer signs out |
 | Payouts | Changing or pausing payouts needed no recent sign-in | Sign-in within the last 15 minutes required |
 | Payouts | The "self" owner-bank check let anyone confirm the owner's account number | Removed |
 | Privacy | The shareable contribution-status API returned hidden contributor names | Name returned only when the contributor chose to show it |
-| Headers | No anti-clickjacking or transport headers | `frame-ancestors 'none'`, `X-Frame-Options`, HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy` |
+| Headers | No Content-Security-Policy, anti-clickjacking or transport headers | Full CSP that allows only the origins in use (self, Razorpay Checkout, Cloudflare analytics, GitHub API; https images) with `object-src 'none'`, `base-uri 'self'`, `form-action` and `frame-ancestors 'none'`. Also `X-Frame-Options`, HSTS, `nosniff`, `Referrer-Policy` and `Permissions-Policy` |
+| Moderation | "Unpublish" returned a page to draft, which the owner could re-publish at once | The page stays unpublished until an admin restores it. The owner can still edit it |
 | Images | The OG image fetch followed redirects without re-validating them and read unbounded bodies | Final URL re-validated, and `content-length` capped before the body is read |
 
 ## Checked and correct
@@ -58,11 +59,9 @@ below), and the owner confirmed both.
 
 1. **Route activation:** must be enabled on the live Razorpay account. It returns "Access Denied" today, and no creator can be paid until it's on.
 2. **Webhook events:** the Razorpay webhook must be subscribed to `refund.processed`, `payment.dispute.created`, `payment.dispute.lost` and `subscription.charged`.
-3. **Migration:** `0013_route_v2_onboarding.sql` must be applied before deploying this code.
+3. **Migrations:** `0013_route_v2_onboarding.sql` and `0014_rate_limits.sql` must be applied before deploying this code.
 4. **Partial refunds:**
    - A partial refund of a product purchase records a refund row but keeps access.
    - Refunds of autopay renewals are recorded without changing access.
    - Refunds don't write a reversing ledger entry yet.
-5. **Content-Security-Policy:** it only sets `frame-ancestors`. A script/style policy needs a nonce pipeline for Razorpay Checkout and MUI.
-6. **Moderation:** "unpublish" returns a page to draft, which the owner can re-publish. Use "hold" when a block must stick.
-7. **Rate limits:** KV-based, so a burst can let a few extra requests through. A Durable Object would make them exact.
+5. **Inline scripts:** the CSP allows them, because pages are statically rendered and can't carry a per-request nonce. External scripts are limited to the listed origins, and XSS is prevented by escaping (checked above).
