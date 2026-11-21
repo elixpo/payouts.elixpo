@@ -18,6 +18,7 @@ import CoverCarousel from "./cover-carousel";
 import StickyContribute from "./sticky-contribute";
 import ContributeForm from "./contribute-form";
 import PolicyLinks from "@/components/trust/policy-links";
+import TrustStrip from "@/components/trust/trust-strip";
 import ReportLink from "./report-link";
 import "../fundraiser.css";
 
@@ -191,6 +192,7 @@ export default async function FundraiserPage({ params }: Params) {
                                           : "This fundraiser isn't accepting contributions right now."
                                 }
                             />
+                            <TrustStrip slug={view.slug} />
                         </div>
                         </div>
                     </aside>

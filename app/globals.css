@@ -253,6 +253,8 @@ body {
   grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
   padding-top: 1.5rem; border-top: 1px solid var(--app-border); color: var(--app-fg-muted); font-size: 0.78rem;
 }
+.footer-base a { color: inherit; text-decoration: underline; text-decoration-color: var(--app-border); text-underline-offset: 2px; }
+.footer-base a:hover { color: var(--app-fg); }
 @media (max-width: 860px) {
   .site-footer { grid-template-columns: 1fr; }
 }
