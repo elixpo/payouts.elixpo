@@ -9,6 +9,7 @@ import {
     resolveProductAndPrice,
     upsertCustomer,
 } from "@/lib/repo";
+import { hasActiveRouteAccount } from "@/lib/route-account";
 
 const CURRENCIES = ["INR", "USD", "EUR", "GBP"];
 const INTERVALS = ["day", "week", "month", "year"];
@@ -131,6 +132,23 @@ export async function POST(request: NextRequest) {
         }
 
         const amount = resolved.price.unit_amount;
+
+        // Razorpay Route (merchant payouts) only settles INR. A Route-connected
+        // merchant can't take other currencies — the money would have nowhere
+        // to go but the platform account.
+        if (
+            currency !== "INR" &&
+            (await hasActiveRouteAccount(db, app.merchant_id))
+        ) {
+            return NextResponse.json(
+                {
+                    error: "currency_not_supported_for_payouts",
+                    error_description:
+                        "Payouts to this merchant are INR-only; use currency INR.",
+                },
+                { status: 400 },
+            );
+        }
         let returnUrl = app.return_url;
         if (body.success_url != null && body.success_url !== "") {
             returnUrl = safeReturnUrl(body.success_url);
@@ -153,13 +171,17 @@ export async function POST(request: NextRequest) {
         // subscriptions are cancelled once the new mandate activates (see
         // cancelSupersededSubscriptions in the Razorpay webhook).
 
-        const metadata: Record<string, unknown> = {
-            plan: tier,
-            source: "api",
-        };
-        if (body.metadata && typeof body.metadata === "object") {
+        // Caller metadata first, then the system keys so they always win.
+        const metadata: Record<string, unknown> = {};
+        if (
+            body.metadata &&
+            typeof body.metadata === "object" &&
+            !Array.isArray(body.metadata)
+        ) {
             Object.assign(metadata, body.metadata);
         }
+        metadata.plan = tier;
+        metadata.source = "api";
 
         const sessionId = await createCheckoutSession(db, {
             appId: app.id,

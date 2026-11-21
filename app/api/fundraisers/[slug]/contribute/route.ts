@@ -14,7 +14,14 @@ import {
 import { getUsdInrRate } from "@/lib/fx";
 import { newId } from "@/lib/ids";
 import { razorpayFromEnv } from "@/lib/providers/razorpay";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { routeTransfers } from "@/lib/route-transfers";
+
+// Anonymous contribution creation is rate-limited (KV fixed window, fails open):
+// per client IP, and per fundraiser as a cap on distributed bursts.
+const RL_WINDOW_SECONDS = 600;
+const RL_PER_IP = 10;
+const RL_PER_FUNDRAISER = 120;
 
 // Same rule as the contribute form: a dotted domain ending in a 2+ letter TLD.
 const EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[a-z]{2,}$/i;
@@ -63,6 +70,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const message = String(body.message || "").trim().slice(0, 280) || null;
     const showName = body.show_name === true && !!name;
 
+    const ip = clientIp(request);
+    if (ip && !(await rateLimit("contrib-ip", ip, RL_PER_IP, RL_WINDOW_SECONDS)).allowed) {
+        return bad("rate_limited", "Too many attempts. Please wait a few minutes and try again.", 429);
+    }
+    if (!(await rateLimit("contrib-f", f.id, RL_PER_FUNDRAISER, RL_WINDOW_SECONDS)).allowed) {
+        return bad("rate_limited", "This fundraiser is busy right now. Please try again in a few minutes.", 429);
+    }
+
     // Charge in INR (the only live route) at the live USD→INR rate; remember
     // what the visitor picked and the rate used.
     const fx = currency === "USD" ? await getUsdInrRate() : null;
@@ -101,9 +116,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             console.error("[fundraisers/contribute] order failed:", err);
             return bad("provider_error", "Couldn't start the payment. Please try again.", 502);
         }
-        // A rejected Route account must never block a contribution.
-        console.error("[fundraisers/contribute] Route transfer rejected; settling to platform:", err);
-        orderId = (await razorpay.createOrder(base)).providerOrderId;
+        // Never fall back to a plain order: the money would settle to the
+        // platform instead of the creator's linked account.
+        console.error(`[fundraisers/contribute] Route order failed for merchant ${f.merchant_id}:`, err);
+        return bad(
+            "payout_route_unavailable",
+            "Payments to this creator are temporarily unavailable. Please try again later.",
+            503,
+        );
     }
     await db.prepare("UPDATE contributions SET provider_order_id = ? WHERE id = ?").bind(orderId, id).run();
 

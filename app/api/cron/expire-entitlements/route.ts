@@ -9,6 +9,7 @@ import {
     toView,
 } from "@/lib/entitlements";
 import { getEnv } from "@/lib/env";
+import { retryContributionEmails } from "@/lib/fundraisers";
 import { notifyBuyer } from "@/lib/mail-notify";
 import { getWebhookEndpoint } from "@/lib/repo";
 import { fireEntitlementUpdated } from "@/lib/webhooks";
@@ -116,8 +117,12 @@ async function handle(request: NextRequest) {
         }
     }
 
+    // Also re-send any fundraiser receipts that never went out.
+    const receipts = await retryContributionEmails(db);
+
     return NextResponse.json({
         ok: true,
+        receipts,
         scanned: rows.length,
         expired,
         notified,

@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { getDatabase } from "@/lib/d1-client";
 import { appUrl } from "@/lib/env";
-import { coverList, getFundraiserBySlug, getTotals, publicName } from "@/lib/fundraisers";
+import { coverList, getFundraiserBySlug, getTotals, publicHttpsUrl, publicName } from "@/lib/fundraisers";
 
 export const runtime = "edge";
 export const alt = "Fundraiser on Elixpo Pay";
@@ -14,9 +14,14 @@ const amount = (minor: number) => `INR ${Math.round(minor / 100).toLocaleString(
 /** Fetch an image as a data URL (≤ 4 MB), or null — a bad image never breaks the card. */
 async function asDataUrl(url: string): Promise<string | null> {
     try {
+        if (!publicHttpsUrl(url)) return null;
         const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
         const type = res.headers.get("content-type") || "";
         if (!res.ok || !type.startsWith("image/")) return null;
+        // Redirects are followed (GitHub raw links redirect), so re-check where we
+        // ended up, and refuse oversized images before reading the body.
+        if (res.url && !publicHttpsUrl(res.url)) return null;
+        if (Number(res.headers.get("content-length") || 0) > 4 * 1024 * 1024) return null;
         const buf = new Uint8Array(await res.arrayBuffer());
         if (buf.byteLength > 4 * 1024 * 1024) return null;
         let bin = "";

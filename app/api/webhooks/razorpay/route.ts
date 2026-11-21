@@ -5,9 +5,17 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/d1-client";
 import { getEnv } from "@/lib/env";
 import { fulfillPayment } from "@/lib/fulfill";
-import { razorpayFromEnv } from "@/lib/providers/razorpay";
+import { revokeForRefundedTransaction, toView } from "@/lib/entitlements";
+import {
+    type RazorpayProvider,
+    type RazorpayRefundEvent,
+    razorpayFromEnv,
+} from "@/lib/providers/razorpay";
 import {
     getCheckoutSessionByOrder,
+    getTransactionByPaymentId,
+    markTransactionRefunded,
+    recordRefund,
     getCheckoutSessionBySubscription,
     getSubscriptionByProviderId,
     recordProviderEvent,
@@ -15,7 +23,7 @@ import {
     getWebhookEndpoint,
     upsertRecurringSubscription,
 } from "@/lib/repo";
-import { markContributionPaid } from "@/lib/fundraisers";
+import { markContributionPaid, markContributionRefunded } from "@/lib/fundraisers";
 import { notifyBuyer } from "@/lib/mail-notify";
 
 /**
@@ -73,6 +81,14 @@ export async function POST(request: NextRequest) {
         );
         if (seen.alreadySeen) {
             return NextResponse.json({ ok: true, duplicate: true });
+        }
+
+        // ── Refunds and disputes ─────────────────────────────────────
+        // Handled before the subscription branch: a refunded autopay charge
+        // carries a subscription_id on its payment entity too.
+        const refund = razorpay.parseRefundEvent(event.raw);
+        if (refund) {
+            return NextResponse.json(await handleRefundEvent(db, razorpay, refund));
         }
 
         // ── Subscription lifecycle events ────────────────────────────
@@ -170,6 +186,146 @@ export async function POST(request: NextRequest) {
         }
         return NextResponse.json({ error: "processing_failed" }, { status: 500 });
     }
+}
+
+/**
+ * refund.processed / payment.dispute.lost / payment.dispute.created.
+ *
+ *  - Fundraiser contribution: flips to 'refunded' once the whole amount is
+ *    gone (drops out of the public total); partials are logged.
+ *  - Product transaction: the refund is recorded in `refunds`; a full refund
+ *    or lost dispute marks the transaction 'refunded' and, for a one-time
+ *    purchase, revokes the access it bought + fires entitlement.updated.
+ *  - Route: any transfer to a creator's linked account is reversed in
+ *    proportion to what was refunded, so the platform doesn't fund it.
+ *
+ * Every write is conditional / de-duplicated, and reversals are computed from
+ * Razorpay's cumulative figures, so a replay (even under a new event id) does
+ * nothing new. Reversal failures are logged and never fail the webhook.
+ */
+async function handleRefundEvent(
+    db: D1Database,
+    razorpay: RazorpayProvider,
+    refund: RazorpayRefundEvent,
+): Promise<Record<string, unknown>> {
+    if (refund.kind === "dispute_created") {
+        console.warn(
+            "[webhook/razorpay] dispute %s opened on payment %s for %d %s",
+            refund.referenceId ?? "?",
+            refund.paymentId,
+            refund.amount,
+            refund.currency ?? "",
+        );
+        return { ok: true, dispute: "created", payment: refund.paymentId };
+    }
+
+    const out: Record<string, unknown> = { ok: true, refund: refund.kind, payment: refund.paymentId };
+    let paymentAmount = refund.paymentAmount;
+
+    const ctb = await markContributionRefunded(db, refund.paymentId, refund.totalRefunded);
+    if (ctb.contributionId) {
+        paymentAmount ??= ctb.amount;
+        out.contribution = ctb.contributionId;
+        out.refunded = ctb.newlyRefunded;
+        out.partial = ctb.partial;
+    } else {
+        const txn = await getTransactionByPaymentId(db, refund.paymentId);
+        if (!txn) {
+            console.warn("[webhook/razorpay] %s for unknown payment %s", refund.kind, refund.paymentId);
+            out.ignored = "unknown_payment";
+        } else {
+            paymentAmount ??= Number(txn.amount);
+            out.transaction = txn.id;
+            await recordRefund(db, {
+                transactionId: txn.id,
+                appId: txn.app_id,
+                providerRefundId: refund.referenceId,
+                currency: refund.currency ?? txn.currency,
+                amount: refund.amount,
+                reason: refund.kind === "dispute_lost" ? "dispute_lost" : "refund",
+            });
+            const full = refund.full || refund.totalRefunded >= Number(txn.amount);
+            out.partial = !full;
+            if (full) {
+                const { changed } = await markTransactionRefunded(db, txn.id);
+                out.refunded = changed;
+                if (changed) out.entitlement = await revokeRefundedAccess(db, txn);
+            } else {
+                console.warn(
+                    "[webhook/razorpay] partial refund on %s (payment %s): %d of %d; access kept",
+                    txn.id,
+                    refund.paymentId,
+                    refund.totalRefunded,
+                    txn.amount,
+                );
+            }
+        }
+    }
+
+    if (!out.ignored && paymentAmount) {
+        out.reversed = await reverseRouteTransfers(razorpay, refund, paymentAmount);
+    }
+    return out;
+}
+
+/** Revoke a refunded one-time purchase's access and tell the consuming app. */
+async function revokeRefundedAccess(db: D1Database, txn: any): Promise<string | null> {
+    const updated = await revokeForRefundedTransaction(db, txn.id);
+    if (!updated) return null;
+    const endpoint = await getWebhookEndpoint(db, txn.app_id);
+    if (endpoint) {
+        const app = (await db
+            .prepare("SELECT slug FROM apps WHERE id = ?")
+            .bind(txn.app_id)
+            .first()) as { slug: string } | null;
+        const { fireEntitlementUpdated } = await import("@/lib/webhooks");
+        await fireEntitlementUpdated(
+            db,
+            endpoint,
+            toView(app?.slug ?? "", updated, updated.external_uid),
+        );
+    }
+    return updated.status;
+}
+
+/**
+ * Reverse Route transfers so each linked account gives back its share of the
+ * refund. Target per transfer = transfer.amount × totalRefunded / payment
+ * amount (capped at the transfer); only the part not already reversed is
+ * requested, which makes this idempotent across replays and successive
+ * partial refunds. Returns the amount reversed now; never throws.
+ */
+async function reverseRouteTransfers(
+    razorpay: RazorpayProvider,
+    refund: RazorpayRefundEvent,
+    paymentAmount: number,
+): Promise<number> {
+    let reversed = 0;
+    try {
+        const transfers = await razorpay.listPaymentTransfers(refund.paymentId);
+        const share = Math.min(1, refund.totalRefunded / paymentAmount);
+        for (const t of transfers) {
+            if (t.status === "failed" || t.status === "reversed") continue;
+            const target = Math.min(t.amount, Math.floor(t.amount * share));
+            const due = target - t.amountReversed;
+            if (due <= 0) continue;
+            try {
+                await razorpay.reverseTransfer(t.id, due);
+                reversed += due;
+            } catch (err) {
+                console.error(
+                    "[webhook/razorpay] reversal of %s (%d) for payment %s failed:",
+                    t.id,
+                    due,
+                    refund.paymentId,
+                    err,
+                );
+            }
+        }
+    } catch (err) {
+        console.error("[webhook/razorpay] couldn't list transfers for %s:", refund.paymentId, err);
+    }
+    return reversed;
 }
 
 /**
