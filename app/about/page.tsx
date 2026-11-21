@@ -3,6 +3,7 @@
 import { Box, Button, Container, Stack, Typography } from "@mui/material";
 import Link from "next/link";
 import PageShell from "../components/page-shell";
+import { CONTACT_EMAIL, LEGAL_COUNTRY, LEGAL_ENTITY, UDYAM_NUMBER, UDYAM_VERIFY_URL } from "@/lib/legal";
 
 const BLOCKS: { title: string; body: string; category: string }[] = [
     {
@@ -294,6 +295,50 @@ export default function AboutPage() {
                         </Stack>
                     ))}
                 </Stack>
+
+                {/* Who runs this */}
+                <Box
+                    component="section"
+                    aria-labelledby="about-who"
+                    sx={{
+                        maxWidth: 720,
+                        mx: "auto",
+                        mb: { xs: 8, md: 12 },
+                        textAlign: "center",
+                        fontFamily: "var(--font-sofia-sans)",
+                    }}
+                >
+                    <Typography
+                        id="about-who"
+                        sx={{
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            letterSpacing: "0.14em",
+                            fontFamily: "var(--font-geist-mono)",
+                            color: "var(--app-fg-muted)",
+                            textTransform: "uppercase",
+                            mb: 1,
+                        }}
+                    >
+                        Who runs this
+                    </Typography>
+                    <Typography
+                        sx={{
+                            color: "var(--app-fg)",
+                            fontSize: "15px",
+                            lineHeight: 1.6,
+                            fontFamily: "var(--font-sofia-sans)",
+                            fontWeight: 450,
+                            "& a": { color: "var(--app-link)", fontWeight: 600 },
+                        }}
+                    >
+                        Elixpo Pay is run by {LEGAL_ENTITY}, a{" "}
+                        <a href={UDYAM_VERIFY_URL} target="_blank" rel="noopener noreferrer">
+                            Udyam-registered MSME
+                        </a>{" "}
+                        ({UDYAM_NUMBER}), {LEGAL_COUNTRY}. Contact <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+                    </Typography>
+                </Box>
 
                 {/* Call to Action (CTA) */}
                 <Stack

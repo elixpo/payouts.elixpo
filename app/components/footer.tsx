@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { CONTACT_EMAIL, LEGAL_COUNTRY, PAYMENT_PROCESSOR, UDYAM_NUMBER, UDYAM_VERIFY_URL } from "@/lib/legal";
 
-const EMAIL = "hello@elixpo.com";
+const EMAIL = CONTACT_EMAIL;
 
 const COLUMNS: { title: string; links: { label: string; href: string; external?: boolean }[] }[] = [
     {
@@ -68,7 +69,13 @@ export default function Footer() {
                 ))}
             </div>
             <div className="footer-base">
-                <span>© {new Date().getFullYear()} Elixpo. Payments processed by Razorpay.</span>
+                <span>
+                    © {new Date().getFullYear()} Elixpo, a{" "}
+                    <a href={UDYAM_VERIFY_URL} target="_blank" rel="noopener noreferrer">
+                        Udyam-registered MSME
+                    </a>{" "}
+                    ({UDYAM_NUMBER}), {LEGAL_COUNTRY}. Payments processed by {PAYMENT_PROCESSOR}.
+                </span>
                 <span className="mono-label">payouts.elixpo.com</span>
             </div>
         </footer>
