@@ -5,38 +5,46 @@
  */
 
 import type { Metadata } from "next";
-import { type FundraiserRow, publicName } from "./fundraisers";
+import { type FundraiserRow, hasEnded, publicName } from "./fundraisers";
+import {
+    BRAND,
+    CARD_SIZE,
+    cardState,
+    cardVersion,
+    fundraiserDescription as describe,
+    formatRupees,
+    fundraiserPageTitle,
+} from "./fundraiser-share";
 
 export const SITE = "https://payouts.elixpo.com";
 
-const inr = (minor: number) => `₹${Math.round(minor / 100).toLocaleString("en-IN")}`;
+const inr = formatRupees;
 
-/** Markdown → plain text excerpt for descriptions. */
-export function plainExcerpt(md: string, n = 155): string {
-    const t = md
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // links → text
-        .replace(/[#*_`>~-]/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-    return t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t;
-}
-
-/** "Ayushman is raising ₹8,000 for Build the first Falera badges. <excerpt>" */
+/** Meta description: the fundraiser's own words, at most 125 characters. */
 export function fundraiserDescription(row: FundraiserRow): string {
-    const who = publicName(row);
-    const lead = `${who} is raising ${inr(row.goal_amount)} for ${row.title}.`;
-    const ex = plainExcerpt(row.body_md, 150 - Math.min(lead.length, 90));
-    return ex ? `${lead} ${ex}` : `${lead} Contribute any amount with UPI or a card — no account needed.`;
+    return describe({ title: row.title, body_md: row.body_md, who: publicName(row), goal: row.goal_amount });
 }
 
-export function fundraiserMetadata(row: FundraiserRow): Metadata {
+/** Path of the generated link-preview card, versioned by its numbers. */
+export function fundraiserCardPath(row: FundraiserRow, raisedMinor: number, contributors: number): string {
+    const state = cardState({ status: row.status, ended: hasEnded(row), raised: raisedMinor, goal: row.goal_amount });
+    return `/f/${row.slug}/og.png?v=${cardVersion(raisedMinor, contributors, state)}`;
+}
+
+export function fundraiserMetadata(row: FundraiserRow, raisedMinor: number, contributors: number): Metadata {
     const who = publicName(row);
     const url = `/f/${row.slug}`;
-    const title = `${row.title} — fundraiser by ${who}`;
     const description = fundraiserDescription(row);
-    const ended = row.status === "closed";
+    const image = {
+        url: fundraiserCardPath(row, raisedMinor, contributors),
+        width: CARD_SIZE.width,
+        height: CARD_SIZE.height,
+        type: "image/png",
+        alt: `${row.title}: ${inr(raisedMinor)} raised of ${inr(row.goal_amount)} on ${BRAND}`,
+    };
     return {
-        title,
+        // Absolute: skip the site-wide "| Elixpo Pay" template so the title stays under 60.
+        title: { absolute: fundraiserPageTitle(row.title) },
         description,
         keywords: [row.title, who, "fundraiser", "donate", "crowdfunding", "support", "UPI donation", "Elixpo Pay"],
         authors: [{ name: who }],
@@ -48,11 +56,11 @@ export function fundraiserMetadata(row: FundraiserRow): Metadata {
             siteName: "Elixpo Pay",
             locale: "en_IN",
             url,
-            title: ended ? `${row.title} (closed)` : row.title,
+            title: row.title,
             description,
-            // og:image comes from app/f/[slug]/opengraph-image.tsx (generated card).
+            images: [image],
         },
-        twitter: { card: "summary_large_image", title: row.title, description },
+        twitter: { card: "summary_large_image", title: row.title, description, images: [image] },
         other: { "og:see_also": SITE },
     };
 }
@@ -72,7 +80,7 @@ export function fundraiserJsonLd(row: FundraiserRow, raisedMinor: number, contri
                 description: fundraiserDescription(row),
                 inLanguage: "en-IN",
                 isPartOf: { "@type": "WebSite", name: "Elixpo Pay", url: SITE },
-                primaryImageOfPage: `${url}/opengraph-image`,
+                primaryImageOfPage: `${SITE}${fundraiserCardPath(row, raisedMinor, contributors)}`,
                 ...(row.published_at ? { datePublished: `${row.published_at.replace(" ", "T")}Z` } : {}),
                 dateModified: `${row.updated_at.replace(" ", "T")}Z`,
                 breadcrumb: { "@id": `${url}#breadcrumb` },
