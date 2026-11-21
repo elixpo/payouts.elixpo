@@ -7,7 +7,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import PageShell from "../../components/page-shell";
 import { getDatabase } from "@/lib/d1-client";
-import { type DisplayCurrency, type FundraiserRow, getFundraiserBySlug, publicView } from "@/lib/fundraisers";
+import { type DisplayCurrency, type FundraiserRow, getFundraiserBySlug, getTotals, publicView } from "@/lib/fundraisers";
 import { formatMoney } from "@/lib/mail-notify";
 import { fundraiserJsonLd, fundraiserMetadata } from "@/lib/fundraiser-seo";
 import { renderMarkdown } from "@/lib/markdown";
@@ -48,7 +48,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
             robots: { index: false, follow: false },
         };
     }
-    return fundraiserMetadata(row);
+    const { raised, count } = await getTotals(db, row.id);
+    return fundraiserMetadata(row, raised, count);
 }
 
 /** INR for visitors in India (CF-IPCountry, then Accept-Language), USD otherwise. */
