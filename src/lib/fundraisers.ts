@@ -406,16 +406,58 @@ export async function markContributionPaid(
         .prepare(
             `UPDATE contributions
              SET status = 'paid', provider_payment_id = COALESCE(?, provider_payment_id), paid_at = datetime('now')
-             WHERE id = ? AND status != 'paid'`,
+             WHERE id = ? AND status NOT IN ('paid', 'refunded')`,
         )
         .bind(paymentId, c.id)
         .run();
-    if (!res.meta?.changes) return { newlyPaid: false, contributionId: c.id };
+    if (!res.meta?.changes) {
+        // Already paid. If its emails never went out (the request that marked it
+        // paid was cut off before notifying), a later webhook/confirm sends them.
+        // Mails dedupes on the idempotency key, so this can't double-send.
+        if (c.status === "paid" && c.thanks_email_status == null) {
+            await notifyContribution(db, c.id).catch((err) =>
+                console.error("[fundraisers] notify retry failed for %s:", c.id, err),
+            );
+        }
+        return { newlyPaid: false, contributionId: c.id };
+    }
 
     await notifyContribution(db, c.id).catch((err) =>
         console.error("[fundraisers] notify failed for %s:", c.id, err),
     );
     return { newlyPaid: true, contributionId: c.id };
+}
+
+/**
+ * Sweep: paid contributions whose receipt or owner alert never went out
+ * (status NULL, or a failed send) in the last 3 days. Run from the cron. Safe to repeat:
+ * Elixpo Mails dedupes each email on its idempotency key.
+ */
+export async function retryContributionEmails(db: D1Database, limit = 50): Promise<{ scanned: number; sent: number }> {
+    const rows = (
+        await db
+            .prepare(
+                `SELECT id FROM contributions
+                 WHERE status = 'paid'
+                   AND (thanks_email_status IS NULL OR thanks_email_status = 'failed'
+                        OR owner_email_status = 'failed')
+                   AND paid_at < datetime('now', '-5 minutes')
+                   AND paid_at > datetime('now', '-3 days')
+                 ORDER BY paid_at LIMIT ?`,
+            )
+            .bind(limit)
+            .all()
+    ).results as { id: string }[];
+    let sent = 0;
+    for (const r of rows ?? []) {
+        try {
+            await notifyContribution(db, r.id);
+            sent++;
+        } catch (err) {
+            console.error("[fundraisers] email sweep failed for %s:", r.id, err);
+        }
+    }
+    return { scanned: rows?.length ?? 0, sent };
 }
 
 /** Thank-you email to the contributor + "new contribution" alert to the owner. */
@@ -629,4 +671,44 @@ export async function ownerView(db: D1Database, row: FundraiserRow) {
         payout_reason: readiness.reason,
         verified: readiness.verified,
     };
+}
+
+/**
+ * Money-back on a contribution (Razorpay `refund.processed` / a lost dispute),
+ * found by its payment id. `totalRefunded` is the payment's CUMULATIVE refunded
+ * amount. Once that covers the whole contribution it flips to 'refunded', which
+ * drops it from getTotals / supporters (they only count 'paid'). A partial
+ * refund leaves it 'paid' and is only logged — contributions have no column
+ * for a partial amount. Idempotent: the UPDATE only fires on a 'paid' row, so a
+ * replayed event is a no-op (newlyRefunded=false).
+ */
+export async function markContributionRefunded(
+    db: D1Database,
+    paymentId: string,
+    totalRefunded: number,
+): Promise<{ contributionId: string | null; newlyRefunded: boolean; partial: boolean; amount: number }> {
+    const c = (await db
+        .prepare("SELECT id, amount, status FROM contributions WHERE provider_payment_id = ?")
+        .bind(paymentId)
+        .first()) as { id: string; amount: number; status: string } | null;
+    if (!c) return { contributionId: null, newlyRefunded: false, partial: false, amount: 0 };
+
+    const amount = Number(c.amount);
+    if (totalRefunded < amount) {
+        console.warn(
+            "[fundraisers] partial refund on %s (payment %s): %d of %d refunded; left as %s",
+            c.id,
+            paymentId,
+            totalRefunded,
+            amount,
+            c.status,
+        );
+        return { contributionId: c.id, newlyRefunded: false, partial: true, amount };
+    }
+
+    const res = await db
+        .prepare("UPDATE contributions SET status = 'refunded' WHERE id = ? AND status = 'paid'")
+        .bind(c.id)
+        .run();
+    return { contributionId: c.id, newlyRefunded: !!res.meta?.changes, partial: false, amount };
 }

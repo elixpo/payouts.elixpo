@@ -96,7 +96,7 @@ export default function ModerationPage() {
                                                 Unpublish
                                             </Button>
                                         )}
-                                        {f.status === "held" && (
+                                        {(f.status === "held" || (f.status === "draft" && f.moderation_note)) && (
                                             <Button sx={btn} disabled={!!busy} onClick={() => act(f.id, "restore")}>
                                                 Restore
                                             </Button>

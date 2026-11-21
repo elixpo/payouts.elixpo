@@ -700,3 +700,76 @@ export async function cancelSupersededSubscriptions(
     }
     return stale.length;
 }
+
+/** A product transaction by its Razorpay payment id (refund / dispute lookups). */
+export async function getTransactionByPaymentId(
+    db: D1Database,
+    providerPaymentId: string,
+): Promise<any | null> {
+    return db
+        .prepare(
+            "SELECT * FROM transactions WHERE provider = 'razorpay' AND provider_payment_id = ?",
+        )
+        .bind(providerPaymentId)
+        .first();
+}
+
+/**
+ * Record one refund / lost dispute against a transaction in the `refunds`
+ * table. De-duplicated on provider_refund_id (rfnd_… / disp_…), so a replayed
+ * event never writes a second row. Returns whether a row was written.
+ */
+export async function recordRefund(
+    db: D1Database,
+    input: {
+        transactionId: string;
+        appId: string;
+        providerRefundId: string | null;
+        currency: string;
+        amount: number;
+        reason: string;
+    },
+): Promise<{ created: boolean }> {
+    if (input.providerRefundId) {
+        const existing = await db
+            .prepare(
+                "SELECT id FROM refunds WHERE provider = 'razorpay' AND provider_refund_id = ?",
+            )
+            .bind(input.providerRefundId)
+            .first();
+        if (existing) return { created: false };
+    }
+    await db
+        .prepare(
+            `INSERT INTO refunds (id, transaction_id, app_id, provider, provider_refund_id, currency, amount, reason, status)
+             VALUES (?, ?, ?, 'razorpay', ?, ?, ?, ?, 'processed')`,
+        )
+        .bind(
+            newId("refund"),
+            input.transactionId,
+            input.appId,
+            input.providerRefundId,
+            input.currency,
+            input.amount,
+            input.reason,
+        )
+        .run();
+    return { created: true };
+}
+
+/**
+ * Flip a transaction to 'refunded' (fully refunded or dispute lost).
+ * Conditional, so only the first caller sees changed=true — replays no-op.
+ */
+export async function markTransactionRefunded(
+    db: D1Database,
+    transactionId: string,
+): Promise<{ changed: boolean }> {
+    const res = await db
+        .prepare(
+            "UPDATE transactions SET status = 'refunded', updated_at = datetime('now') WHERE id = ? AND status != 'refunded'",
+        )
+        .bind(transactionId)
+        .run();
+    return { changed: !!res.meta?.changes };
+}

@@ -48,6 +48,14 @@ export default function PayoutsPage() {
     const [beneficiary, setBeneficiary] = useState("");
     const [accountNumber, setAccountNumber] = useState("");
     const [ifsc, setIfsc] = useState("");
+    // KYC, sent to Razorpay once and never stored by Elixpo.
+    const [phone, setPhone] = useState("");
+    const [pan, setPan] = useState("");
+    const [street, setStreet] = useState("");
+    const [city, setCity] = useState("");
+    const [stateName, setStateName] = useState("");
+    const [postal, setPostal] = useState("");
+    const [purpose, setPurpose] = useState<"fundraising" | "selling">("fundraising");
     const [busy, setBusy] = useState(false);
     const [err, setErr] = useState("");
     const [createError, setCreateError] = useState("");
@@ -88,19 +96,40 @@ export default function PayoutsPage() {
                     beneficiary_name: beneficiary.trim(),
                     account_number: accountNumber.trim(),
                     ifsc: ifsc.trim(),
+                    phone: phone.trim(),
+                    pan: pan.trim(),
+                    street: street.trim(),
+                    city: city.trim(),
+                    state: stateName.trim(),
+                    postal_code: postal.trim(),
+                    purpose,
                 }),
             });
             const d: any = await r.json().catch(() => ({}));
+            if (d.error === "reauth_required") {
+                window.location.href = "/login?next=%2Fdashboard%2Fpayouts";
+                return;
+            }
+            if (r.status === 422 && d.create_error) {
+                setCreateError(d.create_error);
+                await load();
+                return;
+            }
             if (!r.ok) {
                 throw new Error(
                     {
-                        missing_beneficiary: "Enter the account holder name.",
+                        missing_beneficiary: "Enter the account holder name exactly as on your PAN (letters, numbers, spaces).",
+                        invalid_phone: "Enter a 10-digit Indian mobile number.",
+                        invalid_pan: "Enter your personal PAN (10 characters, 4th letter P).",
+                        invalid_address: "Enter your full address (street at least 10 characters, city and state).",
+                        invalid_postal_code: "Enter a 6-digit PIN code.",
                         invalid_ifsc: "That IFSC doesn't look right.",
                         invalid_account_number: "Enter a valid account number.",
                     }[d.error as string] || d.error_description || d.error || "failed",
                 );
             }
             setAccountNumber("");
+            setPan("");
             setSaved(true);
             // Razorpay couldn't create the linked account (e.g. KYC/details) —
             // saved as pending; show why so the merchant can fix it.
@@ -115,7 +144,12 @@ export default function PayoutsPage() {
 
     const disconnect = async () => {
         setBusy(true);
-        await fetch("/api/dashboard/payouts", { method: "DELETE", credentials: "include" });
+        const r = await fetch("/api/dashboard/payouts", { method: "DELETE", credentials: "include" });
+        const d: any = await r.json().catch(() => ({}));
+        if (d.error === "reauth_required") {
+            window.location.href = "/login?next=%2Fdashboard%2Fpayouts";
+            return;
+        }
         setConfirmDisconnect(false);
         setAccount(null);
         setBeneficiary("");
@@ -199,7 +233,7 @@ export default function PayoutsPage() {
                                     {account.beneficiary_name}
                                 </Typography>
                                 <Chip
-                                    label={selfAcct ? "Self" : active ? "Active" : "Pending"}
+                                    label={selfAcct ? "Self" : active ? "Active" : account.status === "disabled" ? "Paused" : account.activation_status === "needs_clarification" ? "Action needed" : account.activation_status ? "In review" : "Pending"}
                                     size="small"
                                     sx={{
                                         height: 20,
@@ -213,7 +247,7 @@ export default function PayoutsPage() {
                             </Stack>
                             <Typography sx={{ color: "var(--app-fg-muted)", fontSize: "0.82rem", mt: 0.2 }}>
                                 {account.bank_ifsc} · A/C ••••{account.bank_last4}
-                                {account.razorpay_account_id ? ` · ${account.razorpay_account_id}` : ""}
+
                             </Typography>
                         </Box>
                     </Stack>
@@ -226,8 +260,13 @@ export default function PayoutsPage() {
                     ) : (
                         !active && (
                             <Typography sx={{ color: "color-mix(in srgb, var(--app-warn) 85%, transparent)", fontSize: "0.8rem", mt: 1.4 }}>
-                                Funds currently settle to Elixpo. Routing to your bank turns on once
-                                your Razorpay linked account is attached & verified.
+                                {account.status === "disabled"
+                                    ? "Payouts are paused. Connect again below to resume them."
+                                    : account.activation_status === "needs_clarification"
+                                      ? `Razorpay needs more from you: ${account.activation_note || "check your details below and submit again"}.`
+                                      : account.kyc_submitted
+                                        ? "Razorpay is verifying your details, usually within 1 to 2 working days. Fundraisers can be published and splits start as soon as it is approved."
+                                        : "Finish connecting below. Until then, payments can't be split to you."}
                             </Typography>
                         )
                     )}
@@ -240,13 +279,75 @@ export default function PayoutsPage() {
                     {connected ? "Update bank details" : "Connect your bank"}
                 </Typography>
                 <Typography sx={{ color: "var(--app-fg-muted)", fontSize: "0.82rem", mb: 2 }}>
-                    We verify these and set up your Razorpay payout account for you — you
-                    don't touch Razorpay. Your account number is never stored in full
-                    (only the last 4 digits, for display).
+                    Razorpay, our RBI-regulated payment partner, verifies these once (KYC) and
+                    pays you directly. Your PAN, phone and address go only to Razorpay; we keep
+                    just the last 4 digits of your account number, for display.
                 </Typography>
                 <Stack spacing={1.8}>
+                    {!account?.kyc_submitted && (
+                        <>
+                            <Box>
+                                <Typography sx={labelSx}>What will you use payouts for?</Typography>
+                                <Stack direction="row" spacing={1}>
+                                    {(
+                                        [
+                                            ["fundraising", "Fundraisers"],
+                                            ["selling", "Selling my app or product"],
+                                        ] as const
+                                    ).map(([v, l]) => (
+                                        <Button
+                                            key={v}
+                                            onClick={() => setPurpose(v)}
+                                            aria-pressed={purpose === v}
+                                            sx={{
+                                                textTransform: "none",
+                                                fontWeight: 600,
+                                                borderRadius: "999px",
+                                                px: 2,
+                                                border: "1px solid",
+                                                borderColor: purpose === v ? "var(--app-ink)" : "var(--app-border)",
+                                                background: purpose === v ? "var(--app-ink)" : "transparent",
+                                                color: purpose === v ? "var(--app-on-ink)" : "var(--app-fg)",
+                                                "&:hover": { background: purpose === v ? "var(--app-ink)" : "var(--app-overlay)" },
+                                            }}
+                                        >
+                                            {l}
+                                        </Button>
+                                    ))}
+                                </Stack>
+                            </Box>
+                            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.8}>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography sx={labelSx}>Mobile number</Typography>
+                                    <TextField value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9876543210" inputProps={{ inputMode: "numeric", autoComplete: "tel-national" }} size="small" fullWidth sx={field} />
+                                </Box>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography sx={labelSx}>PAN (personal)</Typography>
+                                    <TextField value={pan} onChange={(e) => setPan(e.target.value.toUpperCase())} placeholder="ABCPE1234F" inputProps={{ autoComplete: "off", maxLength: 10 }} size="small" fullWidth sx={field} />
+                                </Box>
+                            </Stack>
+                            <Box>
+                                <Typography sx={labelSx}>Address</Typography>
+                                <TextField value={street} onChange={(e) => setStreet(e.target.value)} placeholder="House, street, area" inputProps={{ autoComplete: "street-address" }} size="small" fullWidth sx={field} />
+                            </Box>
+                            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.8}>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography sx={labelSx}>City</Typography>
+                                    <TextField value={city} onChange={(e) => setCity(e.target.value)} placeholder="Kolkata" inputProps={{ autoComplete: "address-level2" }} size="small" fullWidth sx={field} />
+                                </Box>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography sx={labelSx}>State</Typography>
+                                    <TextField value={stateName} onChange={(e) => setStateName(e.target.value)} placeholder="West Bengal" inputProps={{ autoComplete: "address-level1" }} size="small" fullWidth sx={field} />
+                                </Box>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography sx={labelSx}>PIN code</Typography>
+                                    <TextField value={postal} onChange={(e) => setPostal(e.target.value)} placeholder="700001" inputProps={{ inputMode: "numeric", autoComplete: "postal-code", maxLength: 6 }} size="small" fullWidth sx={field} />
+                                </Box>
+                            </Stack>
+                        </>
+                    )}
                     <Box>
-                        <Typography sx={labelSx}>Account holder name</Typography>
+                        <Typography sx={labelSx}>Account holder name (as on PAN)</Typography>
                         <TextField value={beneficiary} onChange={(e) => setBeneficiary(e.target.value)} placeholder="Acme Pvt Ltd" size="small" fullWidth sx={field} />
                     </Box>
                     <Stack direction={{ xs: "column", sm: "row" }} spacing={1.8}>
@@ -263,7 +364,7 @@ export default function PayoutsPage() {
                 {createError && (
                     <Box sx={{ mt: 1.8, px: 1.6, py: 1.2, borderRadius: "10px", background: "color-mix(in srgb, var(--app-warn) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--app-warn) 30%, transparent)" }}>
                         <Typography sx={{ color: "var(--app-warn)", fontSize: "0.82rem" }}>
-                            Saved, but Razorpay couldn't set up the payout account yet: {createError}
+                            Razorpay couldn't accept these details yet: {createError}
                         </Typography>
                     </Box>
                 )}
@@ -277,7 +378,7 @@ export default function PayoutsPage() {
                     </Button>
                     {connected && (
                         <Button onClick={() => setConfirmDisconnect(true)} disabled={busy} sx={{ textTransform: "none", fontWeight: 600, color: "color-mix(in srgb, var(--app-danger) 85%, transparent)", border: "1px solid color-mix(in srgb, var(--app-danger) 25%, transparent)", borderRadius: "999px", px: 2 }}>
-                            Disconnect
+                            Pause payouts
                         </Button>
                     )}
                     {saved && (
@@ -347,14 +448,14 @@ export default function PayoutsPage() {
                 open={confirmDisconnect}
                 destructive
                 busy={busy}
-                title="Disconnect your bank?"
-                confirmLabel="Disconnect"
+                title="Pause payouts?"
+                confirmLabel="Pause payouts"
                 message={
                     <>
-                        With no bank connected, your payments will{" "}
-                        <strong>settle into the Elixpo Pay account</strong> (
-                        <strong>hello@elixpo.com</strong>) until you reconnect — they won't
-                        reach your bank. Your existing payments aren't affected.
+                        While payouts are paused, your fundraisers stop accepting contributions, and
+                        product payments <strong>settle into the Elixpo Pay account</strong> instead of
+                        your bank until you resume. Payments already made aren't affected. You can
+                        resume any time without redoing KYC.
                     </>
                 }
                 onConfirm={disconnect}

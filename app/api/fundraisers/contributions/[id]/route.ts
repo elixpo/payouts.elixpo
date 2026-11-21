@@ -10,7 +10,7 @@ async function load(id: string) {
     const db = await getDatabase();
     const c = (await db
         .prepare(
-            `SELECT c.id, c.status, c.amount, c.currency, c.display_amount, c.display_currency, c.name,
+            `SELECT c.id, c.status, c.amount, c.currency, c.display_amount, c.display_currency, c.name, c.show_name,
                     c.provider_order_id, c.thanks_email_status, f.slug, f.title, f.thank_you_message, f.owner_name, f.display_name
              FROM contributions c JOIN fundraisers f ON f.id = c.fundraiser_id WHERE c.id = ?`,
         )
@@ -27,7 +27,8 @@ function view(c: any) {
         currency: c.currency,
         display_amount: c.display_amount,
         display_currency: c.display_currency,
-        name: c.name,
+        // This URL is shareable (thank-you page), so a hidden name stays hidden.
+        name: c.show_name ? c.name : null,
         email_status: c.thanks_email_status,
         fundraiser: {
             slug: c.slug,

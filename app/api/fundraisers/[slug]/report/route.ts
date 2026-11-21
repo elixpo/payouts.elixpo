@@ -8,6 +8,7 @@ import { newId } from "@/lib/ids";
 import { PLATFORM_MERCHANT_ID } from "@/lib/merchant";
 import { quoteBlockHtml } from "@/lib/mail-notify";
 import { sendPlatformMail } from "@/lib/platform-mail";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 const REASONS = new Set(["scam", "misleading", "inappropriate", "impersonation", "other"]);
 
@@ -29,7 +30,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         return NextResponse.json({ error: "not_found" }, { status: 404 });
     }
 
-    // Light abuse guard: cap open reports per page.
+    // Abuse guards: per-IP and per-page rate limits, plus a cap on open reports.
+    const ip = clientIp(request);
+    if (ip && !(await rateLimit("report-ip", ip, 5, 3600)).allowed) {
+        return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+    }
+    if (!(await rateLimit("report-page", f.id, 30, 3600)).allowed) {
+        return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+    }
     const open = (await db
         .prepare("SELECT COUNT(*) AS n FROM fundraiser_reports WHERE fundraiser_id = ? AND status = 'open'")
         .bind(f.id)
@@ -45,6 +53,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         )
         .bind(id, f.id, reason, details, email)
         .run();
+
+    // Email the admin only for the first open report on a page; later ones
+    // are visible in the moderation queue without flooding the inbox.
+    if ((open?.n ?? 0) > 0) return NextResponse.json({ ok: true });
 
     const base = await appUrl();
     const admin = (await db
