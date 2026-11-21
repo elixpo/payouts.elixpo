@@ -38,7 +38,7 @@ below), and the owner confirmed both.
 | Privacy | The shareable contribution-status API returned hidden contributor names | Name returned only when the contributor chose to show it |
 | Headers | No Content-Security-Policy, anti-clickjacking or transport headers | Full CSP that allows only the origins in use (self, Razorpay Checkout, Cloudflare analytics, GitHub API; https images) with `object-src 'none'`, `base-uri 'self'`, `form-action` and `frame-ancestors 'none'`. Also `X-Frame-Options`, HSTS, `nosniff`, `Referrer-Policy` and `Permissions-Policy` |
 | Moderation | "Unpublish" returned a page to draft, which the owner could re-publish at once | The page stays unpublished until an admin restores it. The owner can still edit it |
-| Images | The OG image fetch followed redirects without re-validating them and read unbounded bodies | Final URL re-validated, and `content-length` capped before the body is read |
+| Images | The share image fetched remote covers and followed redirects without re-validating them | The current share card (`/f/[slug]/og.png`) draws its own artwork and fetches no remote images |
 
 ## Checked and correct
 
